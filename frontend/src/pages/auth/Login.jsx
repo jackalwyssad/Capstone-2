@@ -112,10 +112,7 @@ export const Login = () => {
       </form>
 
       <div className="mt-6 pt-4 border-t border-slate-800 text-center text-xs text-slate-400">
-        Khusus pendaftaran admin baru?{' '}
-        <Link to="/register-admin" className="text-primary-400 font-semibold hover:underline">
-          Daftar Admin
-        </Link>
+        Akun diberikan oleh Administrator STMIK Bandung.
       </div>
     </div>
   );

@@ -11,7 +11,6 @@ import { RoleRoute } from './RoleRoute';
 
 // Pages
 import { Login } from '../pages/auth/Login';
-import { RegisterAdmin } from '../pages/auth/RegisterAdmin';
 import { ForgotPassword } from '../pages/auth/ForgotPassword';
 import { ResetPassword } from '../pages/auth/ResetPassword';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
@@ -41,7 +40,6 @@ export const AppRoutes = () => {
       {/* Rute Autentikasi Publik */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
-        <Route path="/register-admin" element={<RegisterAdmin />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
       </Route>

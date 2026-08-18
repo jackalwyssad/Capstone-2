@@ -19,11 +19,10 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
 
     // ==========================================
-    // Rute Publik (Autentikasi & Reset Password)
+    // Rute Publik (Hanya Login & Reset Password)
     // ==========================================
     Route::prefix('auth')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
-        Route::post('/register-admin', [AuthController::class, 'registerAdmin']);
         Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
         Route::post('/reset-password', [AuthController::class, 'resetPassword']);
     });
@@ -62,6 +61,8 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:Admin')->group(function () {
             Route::get('/users/roles', [UserController::class, 'roles']);
             Route::apiResource('users', UserController::class);
+            // Register Admin baru hanya bisa dilakukan oleh Admin yang sudah login
+            Route::post('/auth/register-admin', [AuthController::class, 'registerAdmin']);
         });
 
         // Export Laporan & Rekapitulasi
