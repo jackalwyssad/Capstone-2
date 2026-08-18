@@ -155,7 +155,7 @@ export const PerwalianListPage = () => {
   const openCreateModal = () => {
     setSelectedPerwalian(null);
     setSemesterInput('2025/2026 Ganjil');
-    setIpkInput('3.50');
+    setIpkInput(user?.mahasiswa?.ipk_terakhir ? String(user.mahasiswa.ipk_terakhir) : '3.50');
     setCatatanMhs('');
     setMatakuliahList([
       { kode: 'IF-101', nama: 'Algoritma & Pemrograman', sks: 4, kelas: 'A' },
@@ -477,7 +477,14 @@ export const PerwalianListPage = () => {
         <form onSubmit={handleFormSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input label="Semester Academic" value={semesterInput} onChange={(e) => setSemesterInput(e.target.value)} required />
-            <Input label="IPK Semester Lalu" type="number" step="0.01" value={ipkInput} onChange={(e) => setIpkInput(e.target.value)} required />
+            <Input
+              label="IPK Semester Lalu (Terkunci)"
+              type="number"
+              step="0.01"
+              value={ipkInput}
+              readOnly
+              className="bg-slate-100 dark:bg-slate-800 font-bold text-slate-600 dark:text-slate-400 cursor-not-allowed"
+            />
           </div>
 
           {/* Dynamic Matakuliah JSON Builder */}
