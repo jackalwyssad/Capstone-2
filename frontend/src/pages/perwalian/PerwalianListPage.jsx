@@ -58,31 +58,137 @@ export const PerwalianListPage = () => {
     { kode: 'IF-102', nama: 'Basis Data Enterprise', sks: 3, kelas: 'IF-A' },
   ]);
 
-  // Katalog mata kuliah resmi STMIK Bandung
+  // Katalog mata kuliah resmi STMIK Bandung + jadwal per kelas
   const KATALOG_MATKUL = [
-    { kode: 'IF-101', nama: 'Algoritma & Pemrograman',         sks: 4 },
-    { kode: 'IF-102', nama: 'Basis Data Enterprise',           sks: 3 },
-    { kode: 'IF-103', nama: 'Pemrograman Web Framework',       sks: 3 },
-    { kode: 'IF-104', nama: 'Arsitektur Perangkat Lunak',      sks: 3 },
-    { kode: 'IF-105', nama: 'Kecerdasan Buatan',               sks: 3 },
-    { kode: 'IF-106', nama: 'Jaringan Komputer',               sks: 3 },
-    { kode: 'IF-107', nama: 'Pemrograman Mobile',              sks: 3 },
-    { kode: 'IF-108', nama: 'Keamanan Sistem Informasi',       sks: 3 },
-    { kode: 'IF-109', nama: 'Komputasi Awan',                  sks: 2 },
-    { kode: 'IF-110', nama: 'Skripsi / Tugas Akhir',           sks: 6 },
-    { kode: 'SI-201', nama: 'Analisis Perancangan Sistem',     sks: 3 },
-    { kode: 'SI-202', nama: 'Manajemen Proyek TI',             sks: 3 },
-    { kode: 'SI-203', nama: 'Sistem Informasi Manajemen',      sks: 3 },
-    { kode: 'SI-204', nama: 'Audit Sistem Informasi',          sks: 3 },
-    { kode: 'SI-205', nama: 'E-Business & E-Commerce',         sks: 3 },
-    { kode: 'MK-301', nama: 'Matematika Diskrit',              sks: 3 },
-    { kode: 'MK-302', nama: 'Statistika & Probabilitas',       sks: 3 },
-    { kode: 'MK-303', nama: 'Kalkulus',                        sks: 3 },
-    { kode: 'MK-304', nama: 'Bahasa Inggris Teknik',           sks: 2 },
-    { kode: 'MK-305', nama: 'Pancasila & Kewarganegaraan',     sks: 2 },
-    { kode: 'MK-306', nama: 'Etika Profesi IT',                sks: 2 },
-    { kode: 'MK-307', nama: 'Kerja Praktik',                   sks: 2 },
+    { kode: 'IF-101', nama: 'Algoritma & Pemrograman',        sks: 4, kelas: [
+      { id: 'A', jadwal: [{hari:'Senin', mulai:'07:30', selesai:'09:10', ruang:'Lab IF-1'}, {hari:'Rabu', mulai:'07:30', selesai:'09:10', ruang:'Lab IF-1'}] },
+      { id: 'B', jadwal: [{hari:'Selasa', mulai:'10:30', selesai:'12:10', ruang:'Lab IF-2'}, {hari:'Kamis', mulai:'10:30', selesai:'12:10', ruang:'Lab IF-2'}] },
+      { id: 'C', jadwal: [{hari:'Sabtu', mulai:'07:30', selesai:'10:50', ruang:'Lab IF-3'}] },
+    ]},
+    { kode: 'IF-102', nama: 'Basis Data Enterprise',          sks: 3, kelas: [
+      { id: 'A', jadwal: [{hari:'Senin', mulai:'09:30', selesai:'12:00', ruang:'Lab DB-1'}] },
+      { id: 'B', jadwal: [{hari:'Rabu', mulai:'13:00', selesai:'15:30', ruang:'Lab DB-2'}] },
+    ]},
+    { kode: 'IF-103', nama: 'Pemrograman Web Framework',      sks: 3, kelas: [
+      { id: 'A', jadwal: [{hari:'Selasa', mulai:'07:30', selesai:'10:00', ruang:'Lab IF-1'}] },
+      { id: 'B', jadwal: [{hari:'Kamis', mulai:'07:30', selesai:'10:00', ruang:'Lab IF-2'}] },
+      { id: 'C', jadwal: [{hari:'Sabtu', mulai:'10:00', selesai:'12:30', ruang:'Lab IF-3'}] },
+    ]},
+    { kode: 'IF-104', nama: 'Arsitektur Perangkat Lunak',     sks: 3, kelas: [
+      { id: 'A', jadwal: [{hari:'Rabu', mulai:'07:30', selesai:'10:00', ruang:'Ruang 301'}] },
+      { id: 'B', jadwal: [{hari:'Jumat', mulai:'07:30', selesai:'10:00', ruang:'Ruang 302'}] },
+    ]},
+    { kode: 'IF-105', nama: 'Kecerdasan Buatan',              sks: 3, kelas: [
+      { id: 'A', jadwal: [{hari:'Senin', mulai:'13:00', selesai:'15:30', ruang:'Lab AI-1'}] },
+      { id: 'B', jadwal: [{hari:'Kamis', mulai:'13:00', selesai:'15:30', ruang:'Lab AI-2'}] },
+    ]},
+    { kode: 'IF-106', nama: 'Jaringan Komputer',              sks: 3, kelas: [
+      { id: 'A', jadwal: [{hari:'Selasa', mulai:'13:00', selesai:'15:30', ruang:'Lab Net-1'}] },
+      { id: 'B', jadwal: [{hari:'Jumat', mulai:'10:00', selesai:'12:30', ruang:'Lab Net-2'}] },
+    ]},
+    { kode: 'IF-107', nama: 'Pemrograman Mobile',             sks: 3, kelas: [
+      { id: 'A', jadwal: [{hari:'Rabu', mulai:'10:00', selesai:'12:30', ruang:'Lab Mobile-1'}] },
+      { id: 'B', jadwal: [{hari:'Sabtu', mulai:'07:30', selesai:'10:00', ruang:'Lab Mobile-2'}] },
+    ]},
+    { kode: 'IF-108', nama: 'Keamanan Sistem Informasi',      sks: 3, kelas: [
+      { id: 'A', jadwal: [{hari:'Kamis', mulai:'07:30', selesai:'10:00', ruang:'Lab Sec-1'}] },
+      { id: 'B', jadwal: [{hari:'Jumat', mulai:'13:00', selesai:'15:30', ruang:'Lab Sec-2'}] },
+    ]},
+    { kode: 'IF-109', nama: 'Komputasi Awan',                 sks: 2, kelas: [
+      { id: 'A', jadwal: [{hari:'Selasa', mulai:'15:30', selesai:'17:10', ruang:'Ruang 401'}] },
+      { id: 'B', jadwal: [{hari:'Sabtu', mulai:'13:00', selesai:'14:40', ruang:'Ruang 402'}] },
+    ]},
+    { kode: 'IF-110', nama: 'Skripsi / Tugas Akhir',          sks: 6, kelas: [
+      { id: 'A', jadwal: [{hari:'Jumat', mulai:'07:30', selesai:'12:30', ruang:'Bimbingan'}] },
+    ]},
+    { kode: 'SI-201', nama: 'Analisis Perancangan Sistem',    sks: 3, kelas: [
+      { id: 'A', jadwal: [{hari:'Senin', mulai:'10:30', selesai:'13:00', ruang:'Ruang 201'}] },
+      { id: 'B', jadwal: [{hari:'Rabu', mulai:'15:00', selesai:'17:30', ruang:'Ruang 202'}] },
+    ]},
+    { kode: 'SI-202', nama: 'Manajemen Proyek TI',            sks: 3, kelas: [
+      { id: 'A', jadwal: [{hari:'Selasa', mulai:'07:30', selesai:'10:00', ruang:'Ruang 203'}] },
+      { id: 'B', jadwal: [{hari:'Kamis', mulai:'15:00', selesai:'17:30', ruang:'Ruang 204'}] },
+    ]},
+    { kode: 'SI-203', nama: 'Sistem Informasi Manajemen',     sks: 3, kelas: [
+      { id: 'A', jadwal: [{hari:'Rabu', mulai:'07:30', selesai:'10:00', ruang:'Ruang 205'}] },
+      { id: 'B', jadwal: [{hari:'Jumat', mulai:'10:00', selesai:'12:30', ruang:'Ruang 206'}] },
+    ]},
+    { kode: 'SI-204', nama: 'Audit Sistem Informasi',         sks: 3, kelas: [
+      { id: 'A', jadwal: [{hari:'Senin', mulai:'15:30', selesai:'18:00', ruang:'Ruang 301'}] },
+      { id: 'B', jadwal: [{hari:'Kamis', mulai:'15:00', selesai:'17:30', ruang:'Ruang 302'}] },
+    ]},
+    { kode: 'SI-205', nama: 'E-Business & E-Commerce',        sks: 3, kelas: [
+      { id: 'A', jadwal: [{hari:'Selasa', mulai:'15:30', selesai:'18:00', ruang:'Ruang 303'}] },
+      { id: 'B', jadwal: [{hari:'Sabtu', mulai:'10:00', selesai:'12:30', ruang:'Ruang 304'}] },
+    ]},
+    { kode: 'MK-301', nama: 'Matematika Diskrit',             sks: 3, kelas: [
+      { id: 'A', jadwal: [{hari:'Senin', mulai:'07:30', selesai:'10:00', ruang:'Aula A'}] },
+      { id: 'B', jadwal: [{hari:'Rabu', mulai:'13:00', selesai:'15:30', ruang:'Aula B'}] },
+    ]},
+    { kode: 'MK-302', nama: 'Statistika & Probabilitas',      sks: 3, kelas: [
+      { id: 'A', jadwal: [{hari:'Selasa', mulai:'10:30', selesai:'13:00', ruang:'Aula A'}] },
+      { id: 'B', jadwal: [{hari:'Jumat', mulai:'13:00', selesai:'15:30', ruang:'Aula B'}] },
+    ]},
+    { kode: 'MK-303', nama: 'Kalkulus',                       sks: 3, kelas: [
+      { id: 'A', jadwal: [{hari:'Kamis', mulai:'07:30', selesai:'10:00', ruang:'Aula A'}] },
+      { id: 'B', jadwal: [{hari:'Sabtu', mulai:'07:30', selesai:'10:00', ruang:'Aula B'}] },
+    ]},
+    { kode: 'MK-304', nama: 'Bahasa Inggris Teknik',          sks: 2, kelas: [
+      { id: 'A', jadwal: [{hari:'Senin', mulai:'12:00', selesai:'13:40', ruang:'R. Bahasa 1'}] },
+      { id: 'B', jadwal: [{hari:'Rabu', mulai:'12:00', selesai:'13:40', ruang:'R. Bahasa 2'}] },
+    ]},
+    { kode: 'MK-305', nama: 'Pancasila & Kewarganegaraan',    sks: 2, kelas: [
+      { id: 'A', jadwal: [{hari:'Selasa', mulai:'12:00', selesai:'13:40', ruang:'Aula C'}] },
+      { id: 'B', jadwal: [{hari:'Kamis', mulai:'12:00', selesai:'13:40', ruang:'Aula D'}] },
+    ]},
+    { kode: 'MK-306', nama: 'Etika Profesi IT',               sks: 2, kelas: [
+      { id: 'A', jadwal: [{hari:'Jumat', mulai:'07:30', selesai:'09:10', ruang:'Ruang 101'}] },
+    ]},
+    { kode: 'MK-307', nama: 'Kerja Praktik',                  sks: 2, kelas: [
+      { id: 'A', jadwal: [{hari:'Jumat', mulai:'15:30', selesai:'17:10', ruang:'Koordinator KP'}] },
+    ]},
   ];
+
+  // Helper: konversi "HH:MM" ke menit
+  const toMinutes = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+
+  // Helper: format jadwal satu kelas ke string
+  const formatJadwal = (jadwalArr) =>
+    jadwalArr.map(j => `${j.hari} ${j.mulai}–${j.selesai} · ${j.ruang}`).join(' & ');
+
+  // Deteksi bentrok antar semua jadwal yang dipilih
+  const detectConflicts = (list) => {
+    const conflicts = [];
+    const katalogMap = Object.fromEntries(KATALOG_MATKUL.map(m => [m.kode, m]));
+
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const mkI = list[i]; const mkJ = list[j];
+        const katalogI = katalogMap[mkI.kode];
+        const katalogJ = katalogMap[mkJ.kode];
+        if (!katalogI || !katalogJ) continue;
+        const kelasI = katalogI.kelas?.find(k => k.id === mkI.kelas);
+        const kelasJ = katalogJ.kelas?.find(k => k.id === mkJ.kelas);
+        if (!kelasI || !kelasJ) continue;
+
+        for (const jadI of kelasI.jadwal) {
+          for (const jadJ of kelasJ.jadwal) {
+            if (jadI.hari !== jadJ.hari) continue;
+            const startI = toMinutes(jadI.mulai), endI = toMinutes(jadI.selesai);
+            const startJ = toMinutes(jadJ.mulai), endJ = toMinutes(jadJ.selesai);
+            if (startI < endJ && startJ < endI) {
+              conflicts.push(
+                `⚠️ ${mkI.kode} Kelas ${mkI.kelas} bentrok dengan ${mkJ.kode} Kelas ${mkJ.kelas} (${jadI.hari} ${jadI.mulai}–${jadI.selesai})`
+              );
+            }
+          }
+        }
+      }
+    }
+    return conflicts;
+  };
+
+  const conflicts = detectConflicts(matakuliahList);
 
   // Review Form State Dosen
   const [reviewStatus, setReviewStatus] = useState('Disetujui');
@@ -120,20 +226,33 @@ export const PerwalianListPage = () => {
     setIpkInput('3.50');
     setCatatanMhs('');
     setMatakuliahList([
-      { kode: 'IF-101', nama: 'Algoritma & Pemrograman', sks: 4, kelas: 'IF-A' },
-      { kode: 'IF-102', nama: 'Basis Data Enterprise', sks: 3, kelas: 'IF-A' },
+      { kode: 'IF-101', nama: 'Algoritma & Pemrograman', sks: 4, kelas: 'A' },
+      { kode: 'IF-102', nama: 'Basis Data Enterprise', sks: 3, kelas: 'A' },
     ]);
     setIsFormModalOpen(true);
   };
 
-  // Handler saat pilih matakuliah dari dropdown — auto-fill kode & SKS
+  // Handler saat pilih matakuliah dari dropdown — auto-fill kode, nama, SKS, dan kelas pertama
   const handleSelectMatkul = (index, kode) => {
     const found = KATALOG_MATKUL.find((m) => m.kode === kode);
     if (found) {
       const updated = [...matakuliahList];
-      updated[index] = { ...updated[index], kode: found.kode, nama: found.nama, sks: found.sks };
+      const defaultKelas = found.kelas?.[0]?.id || 'A';
+      updated[index] = { kode: found.kode, nama: found.nama, sks: found.sks, kelas: defaultKelas };
+      setMatakuliahList(updated);
+    } else {
+      // Reset jika pilih --
+      const updated = [...matakuliahList];
+      updated[index] = { kode: '', nama: '', sks: 0, kelas: '' };
       setMatakuliahList(updated);
     }
+  };
+
+  // Handler saat ganti kelas
+  const handleSelectKelas = (index, kelasId) => {
+    const updated = [...matakuliahList];
+    updated[index] = { ...updated[index], kelas: kelasId };
+    setMatakuliahList(updated);
   };
 
   const openEditModal = (item) => {
@@ -184,6 +303,10 @@ export const PerwalianListPage = () => {
     e.preventDefault();
     if (matakuliahList.length === 0) {
       toast.error('Pilih minimal 1 mata kuliah.');
+      return;
+    }
+    if (conflicts.length > 0) {
+      toast.error('Selesaikan bentrok jadwal sebelum mengirim pengajuan.');
       return;
     }
     saveMutation.mutate({
@@ -445,53 +568,86 @@ export const PerwalianListPage = () => {
               </Button>
             </div>
 
-            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-              {matakuliahList.map((mk, idx) => (
-                <div key={idx} className="flex items-center gap-2 p-2 rounded-xl bg-slate-100 dark:bg-slate-900">
-                  {/* Dropdown pilih matakuliah dari katalog resmi */}
-                  <select
-                    className="flex-1 text-xs p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-medium"
-                    value={mk.kode}
-                    onChange={(e) => handleSelectMatkul(idx, e.target.value)}
-                    required
-                  >
-                    <option value="">-- Pilih Mata Kuliah --</option>
-                    {KATALOG_MATKUL.map((m) => (
-                      <option key={m.kode} value={m.kode}>
-                        {m.kode} — {m.nama} ({m.sks} SKS)
-                      </option>
-                    ))}
-                  </select>
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              {matakuliahList.map((mk, idx) => {
+                const katalog = KATALOG_MATKUL.find(m => m.kode === mk.kode);
+                const kelasInfo = katalog?.kelas?.find(k => k.id === mk.kelas);
+                const jadwalStr = kelasInfo ? formatJadwal(kelasInfo.jadwal) : null;
+                const isConflicted = conflicts.some(c => c.includes(mk.kode));
 
-                  {/* Kelas */}
-                  <input
-                    type="text"
-                    placeholder="Kelas"
-                    className="w-16 text-xs p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-center"
-                    value={mk.kelas}
-                    onChange={(e) => updateMatakuliahField(idx, 'kelas', e.target.value)}
-                  />
+                return (
+                  <div key={idx}>
+                    <div className={`flex items-center gap-2 p-2 rounded-xl transition-colors ${
+                      isConflicted ? 'bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800' : 'bg-slate-100 dark:bg-slate-900'
+                    }`}>
+                      {/* Dropdown pilih matakuliah dari katalog resmi */}
+                      <select
+                        className="flex-1 text-xs p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-medium"
+                        value={mk.kode}
+                        onChange={(e) => handleSelectMatkul(idx, e.target.value)}
+                        required
+                      >
+                        <option value="">-- Pilih Mata Kuliah --</option>
+                        {KATALOG_MATKUL.map((m) => (
+                          <option key={m.kode} value={m.kode}>
+                            {m.kode} — {m.nama} ({m.sks} SKS)
+                          </option>
+                        ))}
+                      </select>
 
-                  {/* SKS (readonly, otomatis dari katalog) */}
-                  <div className="w-14 text-xs text-center font-bold text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-800 rounded-lg py-1.5 px-2">
-                    {mk.sks || 0} SKS
+                      {/* Dropdown Kelas + jadwal */}
+                      {katalog && (
+                        <select
+                          className="w-20 text-xs p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-semibold"
+                          value={mk.kelas}
+                          onChange={(e) => handleSelectKelas(idx, e.target.value)}
+                        >
+                          {katalog.kelas.map((k) => (
+                            <option key={k.id} value={k.id}>Kelas {k.id}</option>
+                          ))}
+                        </select>
+                      )}
+
+                      {/* SKS badge */}
+                      <div className="w-14 text-xs text-center font-bold text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-800 rounded-lg py-1.5 px-2 flex-shrink-0">
+                        {mk.sks || 0} SKS
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removeMatakuliah(idx)}
+                        className="p-1 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-950 rounded-lg flex-shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Label jadwal di bawah tiap baris */}
+                    {jadwalStr && (
+                      <p className={`text-[10px] mt-0.5 pl-2 ${isConflicted ? 'text-rose-500 font-semibold' : 'text-slate-400 dark:text-slate-500'}`}>
+                        📅 {jadwalStr}
+                      </p>
+                    )}
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => removeMatakuliah(idx)}
-                    className="p-1 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-950 rounded-lg flex-shrink-0"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
               {matakuliahList.length === 0 && (
                 <p className="text-xs text-slate-400 text-center py-4">
                   Belum ada mata kuliah dipilih. Klik "Tambah Matkul" untuk mulai.
                 </p>
               )}
             </div>
+
+            {/* Alert Bentrok */}
+            {conflicts.length > 0 && (
+              <div className="mt-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800">
+                <p className="text-xs font-bold text-rose-700 dark:text-rose-300 mb-1">⚠️ Terdeteksi Bentrok Jadwal:</p>
+                {conflicts.map((c, i) => (
+                  <p key={i} className="text-xs text-rose-600 dark:text-rose-400">{c}</p>
+                ))}
+                <p className="text-xs text-rose-500 mt-1">Ganti kelas atau hapus salah satu mata kuliah yang bentrok.</p>
+              </div>
+            )}
           </div>
 
           <div>
@@ -511,8 +667,13 @@ export const PerwalianListPage = () => {
             <Button type="button" variant="outline" onClick={() => setIsFormModalOpen(false)}>
               Batal
             </Button>
-            <Button type="submit" isLoading={saveMutation.isLoading}>
-              Kirim Pengajuan Perwalian
+            <Button
+              type="submit"
+              isLoading={saveMutation.isLoading}
+              disabled={conflicts.length > 0 || saveMutation.isLoading}
+              className={conflicts.length > 0 ? 'opacity-50 cursor-not-allowed' : ''}
+            >
+              {conflicts.length > 0 ? `Ada Bentrok (${conflicts.length})` : 'Kirim Pengajuan Perwalian'}
             </Button>
           </div>
         </form>
