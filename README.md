@@ -369,31 +369,7 @@ Berdasarkan hasil pengujian otomatis dan analisis kode menyeluruh, berikut hasil
   Status: 0 Error, 0 Warning Kritis (Bundle berhasil terkompilasi optimal)
 ```
 
-### 3. Matriks Hasil Pengujian Fungsional Fitur (Manual & Logic Analysis):
 
-| Modul & Fitur | Skenario Pengujian | Hasil yang Diharapkan | Status | Keterangan Bug |
-|---|---|---|:---:|:---:|
-| **Autentikasi** | Login dengan email & password yang benar | Token Sanctum digenerate, disimpan di Zustand, redirect ke Dashboard | ✅ **BERHASIL** | Tidak ada bug |
-| **Autentikasi** | Login dengan password salah | Muncul error validation 422, notifikasi toast gagal | ✅ **BERHASIL** | Tidak ada bug |
-| **Autentikasi** | Logout Pengguna | Token dicabut di backend, store dibersihkan, redirect ke `/login` | ✅ **BERHASIL** | Tidak ada bug |
-| **Otorisasi & Guard** | Mahasiswa mencoba membuka URL `/settings/users` | Diblokir oleh `RoleRoute`, dialihkan ke halaman `/403 Forbidden` | ✅ **BERHASIL** | Tidak ada bug |
-| **Dashboard** | Tampilan Admin / Dosen / Mahasiswa | Komponen dashboard menyesuaikan role secara reaktif | ✅ **BERHASIL** | Tidak ada bug |
-| **Dashboard** | Render Recharts Bar & Pie Chart | Visualisasi grafik semester & status tampil akurat dari data backend | ✅ **BERHASIL** | Tidak ada bug |
-| **Perwalian (Mhs)** | Pengajuan KRS dengan dynamic builder | Baris matkul dapat ditambah/dihapus, SKS terkalkulasi, status menjadi Pending | ✅ **BERHASIL** | Tidak ada bug |
-| **Perwalian (Mhs)** | Edit / Hapus Perwalian status Pending | Pengajuan berhasil diubah/dihapus, audit log tercatat | ✅ **BERHASIL** | Tidak ada bug |
-| **Perwalian (Mhs)** | Edit / Hapus Perwalian status Disetujui/Ditolak | Tombol edit/hapus terkunci, backend menolak dengan error validation 422 | ✅ **BERHASIL** | Tidak ada bug |
-| **Perwalian (Dosen)** | Approval / Rejection Perwalian | Dosen dapat memilih Disetujui/Ditolak, mengisi catatan, status terupdate | ✅ **BERHASIL** | Tidak ada bug |
-| **Mahasiswa (Admin)** | Searching & Filtering Prodi | Query `ILIKE` case-insensitive mencari data secara realtime tanpa error | ✅ **BERHASIL** | Tidak ada bug |
-| **Mahasiswa (Admin)** | Import Data JSON/Excel | Data mahasiswa baru masuk ke database dan otomatis terbuat akun usernya | ✅ **BERHASIL** | Tidak ada bug |
-| **Dosen (Admin)** | Assign Dosen Wali Massal | Relasi `dosen_wali_id` pada mahasiswa terpilih berhasil diperbarui | ✅ **BERHASIL** | Tidak ada bug |
-| **Ekspor Data** | Export Excel (.xlsx) | File Excel berisikan seluruh data perwalian/mahasiswa otomatis di-download | ✅ **BERHASIL** | Tidak ada bug |
-| **Ekspor Data** | Export PDF (.pdf) | File PDF resmi ber-tata letak tabel rapi otomatis di-download via `jspdf-autotable` | ✅ **BERHASIL** | Tidak ada bug |
-| **Tema Visual** | Toggle Dark Mode / Light Mode | Tema berganti instan dan tetap tersimpan setelah refresh browser (`localStorage`) | ✅ **BERHASIL** | Tidak ada bug |
-
-> **KESIMPULAN PENGUJIAN**:
-> Seluruh fitur pada sistem berjalan dengan sangat baik, stabil, memenuhi seluruh standar arsitektur enterprise, dan **TIDAK DITEMUKAN BUG KRITIS (100% Berfungsi Normal)**.
-
----
 
 ## 📚 DOKUMENTASI LANJUTAN
 
