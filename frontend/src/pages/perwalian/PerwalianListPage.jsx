@@ -58,30 +58,38 @@ export const PerwalianListPage = () => {
     { kode: 'IF-102', nama: 'Basis Data Enterprise', sks: 3, kelas: 'IF-A' },
   ]);
 
-  // Katalog mata kuliah resmi STMIK Bandung (1 Jadwal Tetap per Matkul)
+  // Katalog mata kuliah resmi STMIK Bandung (Berurutan per Semester 1-8)
   const KATALOG_MATKUL = [
-    { kode: 'IF-101', nama: 'Algoritma & Pemrograman',        sks: 4, hari: 'Senin',  mulai: '07:30', selesai: '11:00', ruang: 'Lab IF-1' },
-    { kode: 'IF-102', nama: 'Basis Data Enterprise',          sks: 3, hari: 'Senin',  mulai: '11:10', selesai: '13:40', ruang: 'Lab DB-1' },
-    { kode: 'IF-103', nama: 'Pemrograman Web Framework',      sks: 3, hari: 'Selasa', mulai: '07:30', selesai: '10:00', ruang: 'Lab IF-2' },
-    { kode: 'IF-104', nama: 'Arsitektur Perangkat Lunak',     sks: 3, hari: 'Selasa', mulai: '10:30', selesai: '13:00', ruang: 'Ruang 301' },
-    { kode: 'IF-105', nama: 'Kecerdasan Buatan',              sks: 3, hari: 'Rabu',   mulai: '07:30', selesai: '10:00', ruang: 'Lab AI-1' },
-    { kode: 'IF-106', nama: 'Jaringan Komputer',              sks: 3, hari: 'Rabu',   mulai: '10:30', selesai: '13:00', ruang: 'Lab Net-1' },
-    { kode: 'IF-107', nama: 'Pemrograman Mobile',             sks: 3, hari: 'Kamis',  mulai: '07:30', selesai: '10:00', ruang: 'Lab Mobile-1' },
-    { kode: 'IF-108', nama: 'Keamanan Sistem Informasi',      sks: 3, hari: 'Kamis',  mulai: '10:30', selesai: '13:00', ruang: 'Lab Sec-1' },
-    { kode: 'IF-109', nama: 'Komputasi Awan',                 sks: 2, hari: 'Jumat',  mulai: '07:30', selesai: '09:10', ruang: 'Ruang 401' },
-    { kode: 'IF-110', nama: 'Skripsi / Tugas Akhir',          sks: 6, hari: 'Jumat',  mulai: '09:30', selesai: '14:30', ruang: 'Bimbingan' },
-    { kode: 'SI-201', nama: 'Analisis Perancangan Sistem',    sks: 3, hari: 'Senin',  mulai: '14:00', selesai: '16:30', ruang: 'Ruang 201' },
-    { kode: 'SI-202', nama: 'Manajemen Proyek TI',            sks: 3, hari: 'Selasa', mulai: '14:00', selesai: '16:30', ruang: 'Ruang 202' },
-    { kode: 'SI-203', nama: 'Sistem Informasi Manajemen',     sks: 3, hari: 'Rabu',   mulai: '14:00', selesai: '16:30', ruang: 'Ruang 203' },
-    { kode: 'SI-204', nama: 'Audit Sistem Informasi',         sks: 3, hari: 'Kamis',  mulai: '14:00', selesai: '16:30', ruang: 'Ruang 301' },
-    { kode: 'SI-205', nama: 'E-Business & E-Commerce',        sks: 3, hari: 'Jumat',  mulai: '14:40', selesai: '17:10', ruang: 'Ruang 302' },
-    { kode: 'MK-301', nama: 'Matematika Diskrit',             sks: 3, hari: 'Sabtu',  mulai: '07:30', selesai: '10:00', ruang: 'Aula A' },
-    { kode: 'MK-302', nama: 'Statistika & Probabilitas',      sks: 3, hari: 'Sabtu',  mulai: '10:10', selesai: '12:40', ruang: 'Aula A' },
-    { kode: 'MK-303', nama: 'Kalkulus',                       sks: 3, hari: 'Sabtu',  mulai: '13:00', selesai: '15:30', ruang: 'Aula B' },
-    { kode: 'MK-304', nama: 'Bahasa Inggris Teknik',          sks: 2, hari: 'Senin',  mulai: '16:40', selesai: '18:20', ruang: 'R. Bahasa 1' },
-    { kode: 'MK-305', nama: 'Pancasila & Kewarganegaraan',    sks: 2, hari: 'Selasa', mulai: '16:40', selesai: '18:20', ruang: 'Aula C' },
-    { kode: 'MK-306', nama: 'Etika Profesi IT',               sks: 2, hari: 'Rabu',   mulai: '16:40', selesai: '18:20', ruang: 'Ruang 101' },
-    { kode: 'MK-307', nama: 'Kerja Praktik',                  sks: 2, hari: 'Kamis',  mulai: '16:40', selesai: '18:20', ruang: 'Koordinator KP' },
+    // Semester 1
+    { semester: 1, kode: 'IF-101', nama: 'Algoritma & Pemrograman',        sks: 4, hari: 'Senin',  mulai: '07:30', selesai: '11:00', ruang: 'Lab IF-1' },
+    { semester: 1, kode: 'MK-303', nama: 'Kalkulus',                       sks: 3, hari: 'Sabtu',  mulai: '13:00', selesai: '15:30', ruang: 'Aula B' },
+    { semester: 1, kode: 'MK-305', nama: 'Pancasila & Kewarganegaraan',    sks: 2, hari: 'Selasa', mulai: '16:40', selesai: '18:20', ruang: 'Aula C' },
+    // Semester 2
+    { semester: 2, kode: 'IF-102', nama: 'Basis Data Enterprise',          sks: 3, hari: 'Senin',  mulai: '11:10', selesai: '13:40', ruang: 'Lab DB-1' },
+    { semester: 2, kode: 'MK-301', nama: 'Matematika Diskrit',             sks: 3, hari: 'Sabtu',  mulai: '07:30', selesai: '10:00', ruang: 'Aula A' },
+    { semester: 2, kode: 'MK-304', nama: 'Bahasa Inggris Teknik',          sks: 2, hari: 'Senin',  mulai: '16:40', selesai: '18:20', ruang: 'R. Bahasa 1' },
+    // Semester 3
+    { semester: 3, kode: 'IF-103', nama: 'Pemrograman Web Framework',      sks: 3, hari: 'Selasa', mulai: '07:30', selesai: '10:00', ruang: 'Lab IF-2' },
+    { semester: 3, kode: 'SI-201', nama: 'Analisis Perancangan Sistem',    sks: 3, hari: 'Senin',  mulai: '14:00', selesai: '16:30', ruang: 'Ruang 201' },
+    { semester: 3, kode: 'MK-302', nama: 'Statistika & Probabilitas',      sks: 3, hari: 'Sabtu',  mulai: '10:10', selesai: '12:40', ruang: 'Aula A' },
+    // Semester 4
+    { semester: 4, kode: 'IF-104', nama: 'Arsitektur Perangkat Lunak',     sks: 3, hari: 'Selasa', mulai: '10:30', selesai: '13:00', ruang: 'Ruang 301' },
+    { semester: 4, kode: 'IF-106', nama: 'Jaringan Komputer',              sks: 3, hari: 'Rabu',   mulai: '10:30', selesai: '13:00', ruang: 'Lab Net-1' },
+    { semester: 4, kode: 'SI-202', nama: 'Manajemen Proyek TI',            sks: 3, hari: 'Selasa', mulai: '14:00', selesai: '16:30', ruang: 'Ruang 202' },
+    // Semester 5
+    { semester: 5, kode: 'IF-105', nama: 'Kecerdasan Buatan',              sks: 3, hari: 'Rabu',   mulai: '07:30', selesai: '10:00', ruang: 'Lab AI-1' },
+    { semester: 5, kode: 'IF-107', nama: 'Pemrograman Mobile',             sks: 3, hari: 'Kamis',  mulai: '07:30', selesai: '10:00', ruang: 'Lab Mobile-1' },
+    { semester: 5, kode: 'SI-203', nama: 'Sistem Informasi Manajemen',     sks: 3, hari: 'Rabu',   mulai: '14:00', selesai: '16:30', ruang: 'Ruang 203' },
+    // Semester 6
+    { semester: 6, kode: 'IF-108', nama: 'Keamanan Sistem Informasi',      sks: 3, hari: 'Kamis',  mulai: '10:30', selesai: '13:00', ruang: 'Lab Sec-1' },
+    { semester: 6, kode: 'SI-204', nama: 'Audit Sistem Informasi',         sks: 3, hari: 'Kamis',  mulai: '14:00', selesai: '16:30', ruang: 'Ruang 301' },
+    { semester: 6, kode: 'MK-306', nama: 'Etika Profesi IT',               sks: 2, hari: 'Rabu',   mulai: '16:40', selesai: '18:20', ruang: 'Ruang 101' },
+    // Semester 7
+    { semester: 7, kode: 'IF-109', nama: 'Komputasi Awan',                 sks: 2, hari: 'Jumat',  mulai: '07:30', selesai: '09:10', ruang: 'Ruang 401' },
+    { semester: 7, kode: 'SI-205', nama: 'E-Business & E-Commerce',        sks: 3, hari: 'Jumat',  mulai: '14:40', selesai: '17:10', ruang: 'Ruang 302' },
+    { semester: 7, kode: 'MK-307', nama: 'Kerja Praktik',                  sks: 2, hari: 'Kamis',  mulai: '16:40', selesai: '18:20', ruang: 'Koordinator KP' },
+    // Semester 8
+    { semester: 8, kode: 'IF-110', nama: 'Skripsi / Tugas Akhir',          sks: 6, hari: 'Jumat',  mulai: '09:30', selesai: '14:30', ruang: 'Bimbingan' },
   ];
 
   // Helper: konversi "HH:MM" ke menit
@@ -503,7 +511,7 @@ export const PerwalianListPage = () => {
                         <option value="">-- Pilih Mata Kuliah --</option>
                         {KATALOG_MATKUL.map((m) => (
                           <option key={m.kode} value={m.kode}>
-                            {m.kode} — {m.nama} ({m.sks} SKS)
+                            [Sem {m.semester}] {m.kode} — {m.nama} ({m.sks} SKS)
                           </option>
                         ))}
                       </select>
