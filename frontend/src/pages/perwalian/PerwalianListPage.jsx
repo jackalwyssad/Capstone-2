@@ -657,14 +657,39 @@ export const PerwalianListPage = () => {
             </div>
 
             <div>
-              <p className="font-bold mb-1">Rencana Mata Kuliah:</p>
-              <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-2 space-y-1">
-                {selectedPerwalian.matakuliah_rencana?.map((mk, i) => (
-                  <div key={i} className="flex justify-between p-1 bg-white dark:bg-slate-950 rounded-lg">
-                    <span>{mk.kode} - {mk.nama}</span>
-                    <span className="font-bold">{mk.sks} SKS</span>
-                  </div>
-                ))}
+              <p className="font-bold mb-2 text-slate-800 dark:text-slate-200">
+                Jadwal & Rencana Mata Kuliah ({selectedPerwalian.sks_diambil} SKS):
+              </p>
+              <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-100 dark:bg-slate-900 font-bold text-slate-700 dark:text-slate-300">
+                    <tr>
+                      <th className="p-2">Kode & Matkul</th>
+                      <th className="p-2">Hari & Jam</th>
+                      <th className="p-2">Ruang</th>
+                      <th className="p-2 text-right">SKS</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                    {selectedPerwalian.matakuliah_rencana?.map((mk, i) => {
+                      const katalog = KATALOG_MATKUL.find((m) => m.kode === mk.kode);
+                      return (
+                        <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                          <td className="p-2 font-medium">
+                            <span className="font-bold">{mk.kode}</span> — {mk.nama}
+                          </td>
+                          <td className="p-2 text-slate-600 dark:text-slate-400">
+                            {katalog ? `${katalog.hari}, ${katalog.mulai}–${katalog.selesai}` : '-'}
+                          </td>
+                          <td className="p-2 text-slate-600 dark:text-slate-400">
+                            {katalog ? katalog.ruang : '-'}
+                          </td>
+                          <td className="p-2 text-right font-bold">{mk.sks} SKS</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
 
