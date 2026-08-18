@@ -58,6 +58,32 @@ export const PerwalianListPage = () => {
     { kode: 'IF-102', nama: 'Basis Data Enterprise', sks: 3, kelas: 'IF-A' },
   ]);
 
+  // Katalog mata kuliah resmi STMIK Bandung
+  const KATALOG_MATKUL = [
+    { kode: 'IF-101', nama: 'Algoritma & Pemrograman',         sks: 4 },
+    { kode: 'IF-102', nama: 'Basis Data Enterprise',           sks: 3 },
+    { kode: 'IF-103', nama: 'Pemrograman Web Framework',       sks: 3 },
+    { kode: 'IF-104', nama: 'Arsitektur Perangkat Lunak',      sks: 3 },
+    { kode: 'IF-105', nama: 'Kecerdasan Buatan',               sks: 3 },
+    { kode: 'IF-106', nama: 'Jaringan Komputer',               sks: 3 },
+    { kode: 'IF-107', nama: 'Pemrograman Mobile',              sks: 3 },
+    { kode: 'IF-108', nama: 'Keamanan Sistem Informasi',       sks: 3 },
+    { kode: 'IF-109', nama: 'Komputasi Awan',                  sks: 2 },
+    { kode: 'IF-110', nama: 'Skripsi / Tugas Akhir',           sks: 6 },
+    { kode: 'SI-201', nama: 'Analisis Perancangan Sistem',     sks: 3 },
+    { kode: 'SI-202', nama: 'Manajemen Proyek TI',             sks: 3 },
+    { kode: 'SI-203', nama: 'Sistem Informasi Manajemen',      sks: 3 },
+    { kode: 'SI-204', nama: 'Audit Sistem Informasi',          sks: 3 },
+    { kode: 'SI-205', nama: 'E-Business & E-Commerce',         sks: 3 },
+    { kode: 'MK-301', nama: 'Matematika Diskrit',              sks: 3 },
+    { kode: 'MK-302', nama: 'Statistika & Probabilitas',       sks: 3 },
+    { kode: 'MK-303', nama: 'Kalkulus',                        sks: 3 },
+    { kode: 'MK-304', nama: 'Bahasa Inggris Teknik',           sks: 2 },
+    { kode: 'MK-305', nama: 'Pancasila & Kewarganegaraan',     sks: 2 },
+    { kode: 'MK-306', nama: 'Etika Profesi IT',                sks: 2 },
+    { kode: 'MK-307', nama: 'Kerja Praktik',                   sks: 2 },
+  ];
+
   // Review Form State Dosen
   const [reviewStatus, setReviewStatus] = useState('Disetujui');
   const [catatanDosen, setCatatanDosen] = useState('');
@@ -75,7 +101,7 @@ export const PerwalianListPage = () => {
   const totalSks = matakuliahList.reduce((acc, item) => acc + Number(item.sks || 0), 0);
 
   const addMatakuliah = () => {
-    setMatakuliahList([...matakuliahList, { kode: '', nama: '', sks: 3, kelas: 'IF-A' }]);
+    setMatakuliahList([...matakuliahList, { kode: '', nama: '', sks: 0, kelas: 'A' }]);
   };
 
   const removeMatakuliah = (index) => {
@@ -98,6 +124,16 @@ export const PerwalianListPage = () => {
       { kode: 'IF-102', nama: 'Basis Data Enterprise', sks: 3, kelas: 'IF-A' },
     ]);
     setIsFormModalOpen(true);
+  };
+
+  // Handler saat pilih matakuliah dari dropdown — auto-fill kode & SKS
+  const handleSelectMatkul = (index, kode) => {
+    const found = KATALOG_MATKUL.find((m) => m.kode === kode);
+    if (found) {
+      const updated = [...matakuliahList];
+      updated[index] = { ...updated[index], kode: found.kode, nama: found.nama, sks: found.sks };
+      setMatakuliahList(updated);
+    }
   };
 
   const openEditModal = (item) => {
@@ -409,42 +445,52 @@ export const PerwalianListPage = () => {
               </Button>
             </div>
 
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
               {matakuliahList.map((mk, idx) => (
                 <div key={idx} className="flex items-center gap-2 p-2 rounded-xl bg-slate-100 dark:bg-slate-900">
-                  <input
-                    type="text"
-                    placeholder="Kode (IF-101)"
-                    className="w-24 text-xs p-1.5 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-950"
+                  {/* Dropdown pilih matakuliah dari katalog resmi */}
+                  <select
+                    className="flex-1 text-xs p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-medium"
                     value={mk.kode}
-                    onChange={(e) => updateMatakuliahField(idx, 'kode', e.target.value)}
+                    onChange={(e) => handleSelectMatkul(idx, e.target.value)}
                     required
-                  />
+                  >
+                    <option value="">-- Pilih Mata Kuliah --</option>
+                    {KATALOG_MATKUL.map((m) => (
+                      <option key={m.kode} value={m.kode}>
+                        {m.kode} — {m.nama} ({m.sks} SKS)
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Kelas */}
                   <input
                     type="text"
-                    placeholder="Nama Mata Kuliah"
-                    className="flex-1 text-xs p-1.5 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-950"
-                    value={mk.nama}
-                    onChange={(e) => updateMatakuliahField(idx, 'nama', e.target.value)}
-                    required
+                    placeholder="Kelas"
+                    className="w-16 text-xs p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-center"
+                    value={mk.kelas}
+                    onChange={(e) => updateMatakuliahField(idx, 'kelas', e.target.value)}
                   />
-                  <input
-                    type="number"
-                    placeholder="SKS"
-                    className="w-16 text-xs p-1.5 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-950"
-                    value={mk.sks}
-                    onChange={(e) => updateMatakuliahField(idx, 'sks', parseInt(e.target.value) || 0)}
-                    required
-                  />
+
+                  {/* SKS (readonly, otomatis dari katalog) */}
+                  <div className="w-14 text-xs text-center font-bold text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-800 rounded-lg py-1.5 px-2">
+                    {mk.sks || 0} SKS
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => removeMatakuliah(idx)}
-                    className="p-1 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-950 rounded-lg"
+                    className="p-1 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-950 rounded-lg flex-shrink-0"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               ))}
+              {matakuliahList.length === 0 && (
+                <p className="text-xs text-slate-400 text-center py-4">
+                  Belum ada mata kuliah dipilih. Klik "Tambah Matkul" untuk mulai.
+                </p>
+              )}
             </div>
           </div>
 
