@@ -1,0 +1,857 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API Sistem Perwalian Mahasiswa STMIK Bandung",
+        "description": "Dokumentasi REST API Enterprise untuk Sistem Perwalian Mahasiswa STMIK Bandung. Mengelola Autentikasi Sanctum, Data Dosen Wali, Data Mahasiswa, Pengajuan dan Review Perwalian, serta Rekapitulasi Laporan.",
+        "contact": {
+            "name": "Tim Capstone STMIK Bandung",
+            "email": "admin@stmikbandung.ac.id"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://127.0.0.1:8000/api/v1",
+            "description": "Server API Lokal STMIK Bandung"
+        }
+    ],
+    "paths": {
+        "/auth/login": {
+            "post": {
+                "tags": [
+                    "Autentikasi"
+                ],
+                "summary": "Autentikasi Login Pengguna",
+                "description": "Endpoint untuk login pengguna (Admin, Dosen, Mahasiswa) menggunakan Email dan Password.",
+                "operationId": "7c0d984f3d009d07b4d7759429b1df11",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "admin@stmikbandung.ac.id"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "Admin123!"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login Berhasil",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Login berhasil."
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Kredensial atau Validasi Salah"
+                    }
+                }
+            }
+        },
+        "/auth/register-admin": {
+            "post": {
+                "tags": [
+                    "Autentikasi"
+                ],
+                "summary": "Registrasi Akun Admin Baru",
+                "description": "Khusus registrasi administrator STMIK Bandung.",
+                "operationId": "6ee0d628e01c116c4a99e241e589b1a5",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "password",
+                                    "password_confirmation"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Super Administrator"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "example": "admin2@stmikbandung.ac.id"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "Admin123!"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "example": "Admin123!"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Admin Terdaftar"
+                    }
+                }
+            }
+        },
+        "/auth/me": {
+            "get": {
+                "tags": [
+                    "Autentikasi"
+                ],
+                "summary": "Dapatkan Profil User Aktif",
+                "description": "Mengembalikan data profil pengguna yang sedang login berdasarkan token Sanctum.",
+                "operationId": "d5b50a2d7205555b662509be964c9256",
+                "responses": {
+                    "200": {
+                        "description": "Profil ditemukan"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/auth/profile": {
+            "put": {
+                "tags": [
+                    "Autentikasi"
+                ],
+                "summary": "Update Profil Pengguna",
+                "description": "Memperbarui informasi nama, nomor hp, atau avatar akun user aktif.",
+                "operationId": "009ba0c485de93eb37994e1bcc59f208",
+                "responses": {
+                    "200": {
+                        "description": "Profil diperbarui"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/auth/forgot-password": {
+            "post": {
+                "tags": [
+                    "Autentikasi"
+                ],
+                "summary": "Permintaan Lupa Password",
+                "description": "Mengirimkan konfirmasi permintaan reset password.",
+                "operationId": "416d90ea95c59448306123a480c0a829",
+                "responses": {
+                    "200": {
+                        "description": "Instruksi terkirim"
+                    }
+                }
+            }
+        },
+        "/auth/reset-password": {
+            "post": {
+                "tags": [
+                    "Autentikasi"
+                ],
+                "summary": "Reset Password Baru",
+                "description": "Mengubah password pengguna secara sukses.",
+                "operationId": "644c43902a8470da9d1aed4fa9f33fc1",
+                "responses": {
+                    "200": {
+                        "description": "Password berhasil diubah"
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "tags": [
+                    "Autentikasi"
+                ],
+                "summary": "Logout Pengguna",
+                "description": "Menghapus token akses Sanctum pengguna.",
+                "operationId": "8f22b4b1d4d13235593868f409cf2395",
+                "responses": {
+                    "200": {
+                        "description": "Logout Berhasil"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/dashboard/admin": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Dashboard Ringkasan Administrator",
+                "description": "Menampilkan total statistik, grafik per semester, grafik status, grafik bulanan, dan recent activity.",
+                "operationId": "7221f41767d1e5df3e80d46e8ba1dd7a",
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mendapatkan statistik dashboard admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/dashboard/dosen": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Dashboard Dosen Wali",
+                "description": "Menampilkan total mahasiswa bimbingan, counter status perwalian, dan perwalian pending butuh tindakan.",
+                "operationId": "be3c56f65757e749f7cca02ca6c60641",
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mendapatkan statistik dashboard dosen"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/dashboard/mahasiswa": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Dashboard Mahasiswa",
+                "description": "Menampilkan total perwalian, status pengajuan aktif, dan timeline riwayat bimbingan.",
+                "operationId": "90eadad825b8ddb152f44e6ff002635e",
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mendapatkan statistik dashboard mahasiswa"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/dosen": {
+            "get": {
+                "tags": [
+                    "Dosen Wali"
+                ],
+                "summary": "Daftar Dosen Wali (Paginated & Filtered)",
+                "operationId": "5f923b6cf801699b8a37993a4553a52d",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Cari nama/nidn",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Halaman",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mendapatkan data dosen"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Dosen Wali"
+                ],
+                "summary": "Tambah Dosen Wali Baru",
+                "operationId": "9dd2c0f50b65776a4e00cba3096fd7a4",
+                "responses": {
+                    "201": {
+                        "description": "Dosen berhasil dibuat"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/dosen/all-list": {
+            "get": {
+                "tags": [
+                    "Dosen Wali"
+                ],
+                "summary": "Dropdown Option List Seluruh Dosen Wali",
+                "operationId": "892cb9166b9ff6df5e79f605c3146689",
+                "responses": {
+                    "200": {
+                        "description": "Dropdown list dosen"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/dosen/{id}": {
+            "get": {
+                "tags": [
+                    "Dosen Wali"
+                ],
+                "summary": "Detail Data Dosen Wali",
+                "operationId": "f8ba5157844719eb9f31ce81fa43c568",
+                "responses": {
+                    "200": {
+                        "description": "Detail Dosen"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Dosen Wali"
+                ],
+                "summary": "Update Data Dosen Wali",
+                "operationId": "fbe9af76f3f949d7278ed236b9b3d554",
+                "responses": {
+                    "200": {
+                        "description": "Dosen diperbarui"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Dosen Wali"
+                ],
+                "summary": "Hapus Data Dosen Wali",
+                "operationId": "7893d7c7ea3f6d49a7d71880e142c9c6",
+                "responses": {
+                    "200": {
+                        "description": "Dosen dihapus"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/dosen/assign-wali": {
+            "post": {
+                "tags": [
+                    "Dosen Wali"
+                ],
+                "summary": "Penetapan Bulk Dosen Wali ke Mahasiswa",
+                "operationId": "0a37f369a4aff2522b1b72b7aace537f",
+                "responses": {
+                    "200": {
+                        "description": "Penetapan Dosen Wali sukses"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/export/perwalian/excel": {
+            "get": {
+                "tags": [
+                    "Laporan & Rekap"
+                ],
+                "summary": "Ekspor Data Rekap Perwalian ke Format Array Excel",
+                "operationId": "586e8f89b71c1946471c4ca09fc43025",
+                "responses": {
+                    "200": {
+                        "description": "Data ekspor excel"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/mahasiswa": {
+            "get": {
+                "tags": [
+                    "Mahasiswa"
+                ],
+                "summary": "Daftar Mahasiswa (Paginated, Search, Filter)",
+                "operationId": "9c5bad21852f6d0a70d6c4bb3c9bd0e2",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Cari nama/NIM",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "prodi",
+                        "in": "query",
+                        "description": "Filter Prodi",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Daftar mahasiswa didapatkan"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Mahasiswa"
+                ],
+                "summary": "Tambah Data Mahasiswa Baru",
+                "operationId": "d6619ab44f6a08439e0558480ca2875a",
+                "responses": {
+                    "201": {
+                        "description": "Mahasiswa berhasil dibuat"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/mahasiswa/{id}": {
+            "get": {
+                "tags": [
+                    "Mahasiswa"
+                ],
+                "summary": "Detail Data Mahasiswa",
+                "operationId": "9ac2da93bbdd7efef189d18a7327c126",
+                "responses": {
+                    "200": {
+                        "description": "Detail Mahasiswa"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Mahasiswa"
+                ],
+                "summary": "Update Data Mahasiswa",
+                "operationId": "9d9a1e59776e7f438a8e1335331427e0",
+                "responses": {
+                    "200": {
+                        "description": "Mahasiswa diperbarui"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Mahasiswa"
+                ],
+                "summary": "Hapus Data Mahasiswa",
+                "operationId": "6baa06c53cf296b39ecd30f6fa18240a",
+                "responses": {
+                    "200": {
+                        "description": "Mahasiswa dihapus"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/mahasiswa/import": {
+            "post": {
+                "tags": [
+                    "Mahasiswa"
+                ],
+                "summary": "Import Massal Data Mahasiswa",
+                "operationId": "1bf3af8fca1449d5c169308b974a5e33",
+                "responses": {
+                    "200": {
+                        "description": "Import data sukses"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/perwalian": {
+            "get": {
+                "tags": [
+                    "Perwalian"
+                ],
+                "summary": "Daftar Perwalian (Filter Role, Status, Semester)",
+                "operationId": "64ae2d46383e444262b8526a4c37c2ac",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter Status: Pending/Disetujui/Ditolak",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mendapatkan data perwalian"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Perwalian"
+                ],
+                "summary": "Pengajuan Perwalian Baru oleh Mahasiswa",
+                "operationId": "2e56cdfc838f05f26ee92858d16d94dc",
+                "responses": {
+                    "201": {
+                        "description": "Pengajuan perwalian berhasil disimpan"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/perwalian/{id}": {
+            "get": {
+                "tags": [
+                    "Perwalian"
+                ],
+                "summary": "Detail Data Perwalian & Timeline Histori Audit",
+                "operationId": "b2d4a197d62f1fd6cd43fa4ac5b4df87",
+                "responses": {
+                    "200": {
+                        "description": "Detail perwalian ditemukan"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Perwalian"
+                ],
+                "summary": "Update Data Perwalian (Hanya untuk Status Pending)",
+                "operationId": "d22316431cca2529dcdef052154702f6",
+                "responses": {
+                    "200": {
+                        "description": "Perwalian berhasil diperbarui"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Perwalian"
+                ],
+                "summary": "Hapus Data Perwalian (Hanya untuk Status Pending)",
+                "operationId": "32b09bc5dd3843c67037dd5fdcb21a1f",
+                "responses": {
+                    "200": {
+                        "description": "Perwalian dihapus"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/perwalian/{id}/approve-reject": {
+            "post": {
+                "tags": [
+                    "Perwalian"
+                ],
+                "summary": "Approval/Rejection Perwalian oleh Dosen Wali",
+                "operationId": "e0f439da92cce8173700813105a60b9c",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "status"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "Disetujui",
+                                            "Ditolak"
+                                        ],
+                                        "example": "Disetujui"
+                                    },
+                                    "catatan_dosen": {
+                                        "type": "string",
+                                        "example": "Rencana mata kuliah sudah tepat. Lanjutkan perwalian."
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Persetujuan perwalian berhasil diproses"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/users": {
+            "get": {
+                "tags": [
+                    "Kelola User & Role"
+                ],
+                "summary": "Daftar Pengguna & Role",
+                "operationId": "ae84e3058965f3a0790d29d82fe29b11",
+                "responses": {
+                    "200": {
+                        "description": "Daftar pengguna didapatkan"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Kelola User & Role"
+                ],
+                "summary": "Buat User Baru",
+                "operationId": "0e996f660839633eaa5e5d5ae2a42574",
+                "responses": {
+                    "201": {
+                        "description": "User berhasil dibuat"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/users/roles": {
+            "get": {
+                "tags": [
+                    "Kelola User & Role"
+                ],
+                "summary": "Daftar Master Role Spatie",
+                "operationId": "9d89e5deb55ebf8fc9d0e5e00fcf2d7d",
+                "responses": {
+                    "200": {
+                        "description": "Daftar role"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/users/{id}": {
+            "put": {
+                "tags": [
+                    "Kelola User & Role"
+                ],
+                "summary": "Update User & Role",
+                "operationId": "fe4f0cb40e1d8afd31b6f46936c2288a",
+                "responses": {
+                    "200": {
+                        "description": "User diperbarui"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Kelola User & Role"
+                ],
+                "summary": "Hapus User",
+                "operationId": "26d4a5e2abbc500525e2a6576613662b",
+                "responses": {
+                    "200": {
+                        "description": "User dihapus"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "Masukkan token Bearer Sanctum hasil autentikasi login (Contoh: 'Bearer {token}')",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Autentikasi",
+            "description": "Autentikasi"
+        },
+        {
+            "name": "Dashboard",
+            "description": "Dashboard"
+        },
+        {
+            "name": "Dosen Wali",
+            "description": "Dosen Wali"
+        },
+        {
+            "name": "Laporan & Rekap",
+            "description": "Laporan & Rekap"
+        },
+        {
+            "name": "Mahasiswa",
+            "description": "Mahasiswa"
+        },
+        {
+            "name": "Perwalian",
+            "description": "Perwalian"
+        },
+        {
+            "name": "Kelola User & Role",
+            "description": "Kelola User & Role"
+        }
+    ]
+}
