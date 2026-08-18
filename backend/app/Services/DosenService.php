@@ -49,7 +49,7 @@ class DosenService
             $user = $this->userRepository->create([
                 'name' => $data['nama_lengkap'],
                 'email' => $data['email'],
-                'password' => bcrypt($data['password'] ?? 'Dosen123!'),
+                'password' => bcrypt($data['password'] ?? 'Dosen123'),
                 'phone_number' => $data['no_hp'] ?? null,
             ]);
 

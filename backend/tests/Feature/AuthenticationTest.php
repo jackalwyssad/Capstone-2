@@ -26,14 +26,14 @@ class AuthenticationTest extends TestCase
     {
         $user = User::factory()->create([
             'email' => 'admin@stmikbandung.ac.id',
-            'password' => bcrypt('Admin123!'),
+            'password' => bcrypt('Admin123'),
             'is_active' => true,
         ]);
         $user->assignRole('Admin');
 
         $response = $this->postJson('/api/v1/auth/login', [
             'email' => 'admin@stmikbandung.ac.id',
-            'password' => 'Admin123!',
+            'password' => 'Admin123',
         ]);
 
         $response->assertStatus(200)
@@ -48,7 +48,7 @@ class AuthenticationTest extends TestCase
     {
         User::factory()->create([
             'email' => 'admin@stmikbandung.ac.id',
-            'password' => bcrypt('Admin123!'),
+            'password' => bcrypt('Admin123'),
         ]);
 
         $response = $this->postJson('/api/v1/auth/login', [

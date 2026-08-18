@@ -304,13 +304,13 @@ Seluruh akun berikut otomatis dibuat saat menjalankan perintah `php artisan migr
 
 | No | Role Akses | Email Akun Login | Password Default | Fitur Utama yang Dapat Dicoba |
 |:---:|:---|:---|:---:|:---|
-| **1** | **Administrator** | `admin@stmikbandung.ac.id` | `Admin123!` | Dashboard Analitik (Recharts Bar/Pie), CRUD & Import Mahasiswa, CRUD & Assign Dosen Wali, Rekap Perwalian, Kelola User & Hak Akses Spatie, Export Excel/PDF |
-| **2** | **Dosen Wali (1)** | `dosen1@stmikbandung.ac.id` | `Dosen123!` | Dashboard Bimbingan, Review & Approve/Reject Perwalian Mahasiswa Bimbingan, Catatan Dosen, Monitoring Mahasiswa Asuhan, Export Rekap |
-| **3** | **Dosen Wali (2)** | `dosen2@stmikbandung.ac.id` | `Dosen123!` | Dashboard Bimbingan, Approval Perwalian Mahasiswa Asuhan Dosen 2 |
-| **4** | **Dosen Wali (3)** | `dosen3@stmikbandung.ac.id` | `Dosen123!` | Dashboard Bimbingan, Approval Perwalian Mahasiswa Asuhan Dosen 3 |
-| **5** | **Mahasiswa (1)** | `mhs1@student.stmikbandung.ac.id` | `Mahasiswa123!` | Dashboard Mahasiswa, Info Dosen Wali, Pengajuan Perwalian Baru (Dynamic KRS Matkul Builder), Edit/Hapus Status Pending, Linimasa Riwayat Bimbingan |
-| **6** | **Mahasiswa (2)** | `mhs2@student.stmikbandung.ac.id` | `Mahasiswa123!` | Dashboard & Pengajuan Perwalian Mahasiswa 2 |
-| **...**| **Mahasiswa (3-50)** | `mhs3@student.stmikbandung.ac.id` s/d `mhs50@student.stmikbandung.ac.id` | `Mahasiswa123!` | Masing-masing akun mahasiswa terhubung ke salah satu dari 5 Dosen Wali secara merata |
+| **1** | **Administrator** | `admin@stmikbandung.ac.id` | `Admin123` | Dashboard Analitik (Recharts Bar/Pie), CRUD & Import Mahasiswa, CRUD & Assign Dosen Wali, Rekap Perwalian, Kelola User & Hak Akses Spatie, Export Excel/PDF |
+| **2** | **Dosen Wali (1)** | `dosen1@stmikbandung.ac.id` | `Dosen123` | Dashboard Bimbingan, Review & Approve/Reject Perwalian Mahasiswa Bimbingan, Catatan Dosen, Monitoring Mahasiswa Asuhan, Export Rekap |
+| **3** | **Dosen Wali (2)** | `dosen2@stmikbandung.ac.id` | `Dosen123` | Dashboard Bimbingan, Approval Perwalian Mahasiswa Asuhan Dosen 2 |
+| **4** | **Dosen Wali (3)** | `dosen3@stmikbandung.ac.id` | `Dosen123` | Dashboard Bimbingan, Approval Perwalian Mahasiswa Asuhan Dosen 3 |
+| **5** | **Mahasiswa (1)** | `3200001@student.stmikbandung.ac.id` | `Mahasiswa123` | Dashboard Mahasiswa, Info Dosen Wali, Pengajuan Perwalian Baru (Dynamic KRS Builder), Edit/Hapus Status Pending, Linimasa Riwayat Bimbingan |
+| **6** | **Mahasiswa (2)** | `3200002@student.stmikbandung.ac.id` | `Mahasiswa123` | Dashboard & Pengajuan Perwalian Mahasiswa 2 |
+| **...**| **Mahasiswa (3–20)** | `3200003@student.stmikbandung.ac.id` s/d `3200020@student.stmikbandung.ac.id` | `Mahasiswa123` | Masing-masing akun mahasiswa (nama asli, bukan dummy) terhubung ke salah satu dari 5 Dosen Wali secara merata |
 
 ---
 

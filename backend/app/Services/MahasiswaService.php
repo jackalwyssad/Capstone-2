@@ -40,7 +40,7 @@ class MahasiswaService
             $user = $this->userRepository->create([
                 'name' => $data['nama_lengkap'],
                 'email' => $data['email'] ?? strtolower($data['nim']).'@student.stmikbandung.ac.id',
-                'password' => bcrypt($data['password'] ?? 'Mahasiswa123!'),
+                'password' => bcrypt($data['password'] ?? 'Mahasiswa123'),
             ]);
 
             $user->assignRole('Mahasiswa');
