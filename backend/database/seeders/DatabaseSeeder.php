@@ -151,7 +151,7 @@ class DatabaseSeeder extends Seeder
                     'mahasiswa_id'     => $mhs->id,
                     'dosen_id'         => $mhs->dosen_wali_id ?? $dosenModels[0]->id,
                     'semester'         => $semester,
-                    'ipk_semester'     => round(2.80 + ($p % 90) / 100, 2),
+                    'ipk_semester'     => $mhs->ipk_terakhir,
                     'sks_diambil'      => $totalSks,
                     'matakuliah_rencana' => $selectedMatkul,
                     'catatan_mahasiswa'=> "Pengajuan perwalian semester {$semester}. Mohon bimbingannya Bapak/Ibu.",
