@@ -26,7 +26,17 @@ class Dosen extends Model
         'gelar',
         'email',
         'no_hp',
+        'tempat_lahir',
+        'tanggal_lahir',
+        'pendidikan_terakhir',
+        'alamat',
+        'foto',
         'kuota_bimbingan',
+    ];
+
+    protected $casts = [
+        'tanggal_lahir' => 'date',
+        'kuota_bimbingan' => 'integer',
     ];
 
     /**

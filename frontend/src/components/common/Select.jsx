@@ -28,11 +28,13 @@ export const Select = React.forwardRef(({
         } ${className}`}
         {...props}
       >
-        <option value="" disabled>
-          {placeholder}
-        </option>
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+        {placeholder && !options.some((o) => o.value === '') && (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        )}
+        {options.map((opt, idx) => (
+          <option key={`${opt.value}-${idx}`} value={opt.value} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
             {opt.label}
           </option>
         ))}

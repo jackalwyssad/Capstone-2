@@ -23,6 +23,11 @@ class StoreDosenRequest extends FormRequest
             'gelar' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email', 'unique:dosen,email'],
             'no_hp' => ['nullable', 'string', 'max:20'],
+            'tempat_lahir' => ['nullable', 'string', 'max:100'],
+            'tanggal_lahir' => ['nullable', 'date'],
+            'pendidikan_terakhir' => ['nullable', 'string', 'max:100'],
+            'alamat' => ['nullable', 'string'],
+            'foto' => ['nullable', 'string'],
             'kuota_bimbingan' => ['nullable', 'integer', 'min:1', 'max:100'],
             'password' => ['nullable', 'string', 'min:6'],
         ];

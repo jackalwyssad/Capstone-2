@@ -62,6 +62,11 @@ class DosenService
                 'gelar' => $data['gelar'],
                 'email' => $data['email'],
                 'no_hp' => $data['no_hp'] ?? null,
+                'tempat_lahir' => $data['tempat_lahir'] ?? null,
+                'tanggal_lahir' => $data['tanggal_lahir'] ?? null,
+                'pendidikan_terakhir' => $data['pendidikan_terakhir'] ?? null,
+                'alamat' => $data['alamat'] ?? null,
+                'foto' => $data['foto'] ?? null,
                 'kuota_bimbingan' => $data['kuota_bimbingan'] ?? 30,
             ]);
         });
@@ -71,10 +76,14 @@ class DosenService
     {
         return DB::transaction(function () use ($dosen, $data) {
             if ($dosen->user) {
-                $dosen->user->update([
-                    'name' => $data['nama_lengkap'] ?? $dosen->nama_lengkap,
-                    'email' => $data['email'] ?? $dosen->email,
-                ]);
+                $userUpdates = [];
+                if (isset($data['nama_lengkap'])) $userUpdates['name'] = $data['nama_lengkap'];
+                if (isset($data['email'])) $userUpdates['email'] = $data['email'];
+                if (isset($data['foto'])) $userUpdates['avatar'] = $data['foto'];
+                if (isset($data['no_hp'])) $userUpdates['phone_number'] = $data['no_hp'];
+                if (!empty($userUpdates)) {
+                    $dosen->user->update($userUpdates);
+                }
             }
 
             return $this->dosenRepository->update($dosen, $data);

@@ -6,7 +6,7 @@ import { Card } from '../common/Card';
  * Menampilkan kartu angka statistik (Total Mahasiswa, Dosen, Perwalian, Pending, Approved, Rejected)
  * dengan ikon Lucide dan gradien latar belakang modern.
  */
-export const StatCard = ({ title, value, icon: Icon, color = 'blue', description }) => {
+export const StatCard = ({ title, value, icon: Icon, color = 'blue', description, onClick }) => {
   const colorGradients = {
     blue: 'from-blue-500/10 to-indigo-500/10 text-blue-600 dark:text-blue-400 border-blue-200/50 dark:border-blue-800/50',
     emerald: 'from-emerald-500/10 to-teal-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-800/50',
@@ -16,7 +16,12 @@ export const StatCard = ({ title, value, icon: Icon, color = 'blue', description
   };
 
   return (
-    <Card className={`relative overflow-hidden bg-gradient-to-br ${colorGradients[color]}`}>
+    <Card
+      onClick={onClick}
+      className={`relative overflow-hidden bg-gradient-to-br transition-all duration-300 ${colorGradients[color]} ${
+        onClick ? 'cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:ring-2 hover:ring-primary-500/30' : ''
+      }`}
+    >
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
@@ -37,6 +42,12 @@ export const StatCard = ({ title, value, icon: Icon, color = 'blue', description
           </div>
         )}
       </div>
+      {onClick && (
+        <div className="mt-3 pt-2 border-t border-slate-200/40 dark:border-slate-800/40 flex items-center justify-between text-[11px] font-semibold opacity-80 group-hover:opacity-100">
+          <span>Lihat Detail Data</span>
+          <span>→</span>
+        </div>
+      )}
     </Card>
   );
 };

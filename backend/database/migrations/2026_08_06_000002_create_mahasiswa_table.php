@@ -27,6 +27,7 @@ return new class extends Migration
             $table->foreignId('dosen_wali_id')->nullable()->constrained('dosen')->onDelete('set null'); // FK ke Dosen Wali
             $table->decimal('ipk_terakhir', 3, 2)->default(0.00); // IPK akumulasi mahasiswa
             $table->integer('sks_lulus')->default(0); // Total SKS yang telah lulus
+            $table->string('foto')->nullable(); // Foto / Avatar Mahasiswa
             $table->timestamps(); // Created_at dan updated_at
         });
     }

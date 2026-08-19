@@ -14,7 +14,7 @@ class UserRepository implements UserRepositoryInterface
 {
     public function getAllPaginated(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
-        $query = User::with(['roles', 'dosen', 'mahasiswa']);
+        $query = User::with(['roles', 'dosen', 'mahasiswa.dosenWali']);
 
         if (! empty($filters['search'])) {
             $search = $filters['search'];
@@ -33,7 +33,7 @@ class UserRepository implements UserRepositoryInterface
 
     public function findById(int $id): ?User
     {
-        return User::with(['roles', 'dosen', 'mahasiswa'])->find($id);
+        return User::with(['roles', 'dosen', 'mahasiswa.dosenWali'])->find($id);
     }
 
     public function create(array $data): User

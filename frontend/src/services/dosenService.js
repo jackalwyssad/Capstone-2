@@ -39,4 +39,9 @@ export const dosenService = {
     const response = await api.post('/dosen/assign-wali', payload);
     return response.data;
   },
+
+  resetPassword: async (id) => {
+    const response = await api.post(`/dosen/${id}/reset-password`);
+    return response.data;
+  },
 };

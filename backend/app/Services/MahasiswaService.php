@@ -54,6 +54,7 @@ class MahasiswaService
                 'dosen_wali_id' => $data['dosen_wali_id'] ?? null,
                 'ipk_terakhir' => $data['ipk_terakhir'] ?? 0.00,
                 'sks_lulus' => $data['sks_lulus'] ?? 0,
+                'foto' => $data['foto'] ?? null,
             ]);
         });
     }
@@ -61,8 +62,13 @@ class MahasiswaService
     public function updateMahasiswa(Mahasiswa $mahasiswa, array $data): Mahasiswa
     {
         return DB::transaction(function () use ($mahasiswa, $data) {
-            if ($mahasiswa->user && isset($data['nama_lengkap'])) {
-                $mahasiswa->user->update(['name' => $data['nama_lengkap']]);
+            if ($mahasiswa->user) {
+                $userUpdates = [];
+                if (isset($data['nama_lengkap'])) $userUpdates['name'] = $data['nama_lengkap'];
+                if (isset($data['foto'])) $userUpdates['avatar'] = $data['foto'];
+                if (!empty($userUpdates)) {
+                    $mahasiswa->user->update($userUpdates);
+                }
             }
 
             return $this->mahasiswaRepository->update($mahasiswa, $data);

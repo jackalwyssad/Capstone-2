@@ -44,5 +44,35 @@ class Handler extends ExceptionHandler
         $this->reportable(function (Throwable $e) {
             //
         });
+
+        $this->renderable(function (\Illuminate\Auth\AuthenticationException $e, $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sesi login Anda telah berakhir atau belum terautentikasi. Silakan login kembali.',
+                    'errors' => null,
+                ], 401);
+            }
+        });
+
+        $this->renderable(function (\Spatie\Permission\Exceptions\UnauthorizedException $e, $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki hak akses untuk membuka halaman atau fitur ini.',
+                    'errors' => null,
+                ], 403);
+            }
+        });
+
+        $this->renderable(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data yang Anda cari tidak ditemukan di dalam sistem.',
+                    'errors' => null,
+                ], 404);
+            }
+        });
     }
 }

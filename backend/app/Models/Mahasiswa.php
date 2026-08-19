@@ -27,6 +27,7 @@ class Mahasiswa extends Model
         'dosen_wali_id',
         'ipk_terakhir',
         'sks_lulus',
+        'foto',
     ];
 
     protected $casts = [

@@ -55,9 +55,20 @@ export const Navbar = ({ onMobileMenuToggle }) => {
           </div>
           <button
             onClick={() => navigate('/profile')}
-            className="w-9 h-9 rounded-full bg-primary-600 text-white font-bold text-sm flex items-center justify-center shadow-md shadow-primary-600/20 hover:scale-105 transition-transform"
+            className="w-9 h-9 rounded-full bg-primary-600 text-white font-bold text-sm flex items-center justify-center shadow-md shadow-primary-600/20 hover:scale-105 transition-transform overflow-hidden border border-slate-200 dark:border-slate-700"
+            title="Buka Profil Saya"
           >
-            {user?.name ? user.name.charAt(0) : 'U'}
+            {user?.avatar || user?.mahasiswa?.foto || user?.dosen?.foto ? (
+              <img
+                src={user.avatar || user.mahasiswa?.foto || user.dosen?.foto}
+                alt={user.name}
+                className="w-full h-full object-cover"
+              />
+            ) : user?.name ? (
+              user.name.charAt(0)
+            ) : (
+              'U'
+            )}
           </button>
         </div>
       </div>

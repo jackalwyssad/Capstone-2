@@ -23,6 +23,7 @@ class MahasiswaResource extends JsonResource
             'dosen_wali_id' => $this->dosen_wali_id,
             'ipk_terakhir' => (float) $this->ipk_terakhir,
             'sks_lulus' => (int) $this->sks_lulus,
+            'foto' => $this->foto ?? $this->user?->avatar,
             'user' => new UserResource($this->whenLoaded('user')),
             'dosen_wali' => new DosenResource($this->whenLoaded('dosenWali')),
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),

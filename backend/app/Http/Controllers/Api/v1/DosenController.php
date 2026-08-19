@@ -170,4 +170,22 @@ class DosenController extends Controller
 
         return $this->successResponse(null, 'Dosen Wali berhasil ditugaskan ke mahasiswa terpilih.');
     }
+
+    /**
+     * Reset Password Dosen ke Default (Dosen123) oleh Admin.
+     */
+    public function resetPassword(int $id): JsonResponse
+    {
+        $dosen = $this->dosenService->getDosenById($id);
+        if (! $dosen || ! $dosen->user) {
+            return $this->errorResponse('Data Dosen atau Akun Pengguna tidak ditemukan.', 404);
+        }
+
+        $defaultPassword = 'Dosen123';
+        $dosen->user->update(['password' => bcrypt($defaultPassword)]);
+
+        return $this->successResponse([
+            'default_password' => $defaultPassword,
+        ], "Password dosen {$dosen->nama_lengkap} berhasil direset ke: {$defaultPassword}");
+    }
 }

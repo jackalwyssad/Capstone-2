@@ -9,23 +9,23 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
-import { Mail, Lock, LogIn } from 'lucide-react';
+import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 
 // Zod Schema Validation Form Login
 const loginSchema = z.object({
   email: z.string().min(1, 'Email wajib diisi').email('Format email tidak valid'),
-  password: z.string().min(6, 'Password minimal 6 karakter'),
+  password: z.string().min(1, 'Password wajib diisi'),
   rememberMe: z.boolean().optional(),
 });
 
 /**
- * Halaman Login Autentikasi Pengguna
+ * Halaman Login Autentikasi Pengguna STMIK Bandung
  * Menggunakan React Hook Form & Zod Validation. Menghubungkan ke API Sanctum Laravel backend.
  * Menyimpan token Bearer dan data profil user ke Zustand authStore.
- * Mendukung toggle Dark/Light Mode langsung dari halaman login.
  */
 export const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [serverError, setServerError] = useState('');
   const { setAuth } = useAuthStore();
   const { isDarkMode, toggleDarkMode } = useThemeStore();
   const navigate = useNavigate();
@@ -45,6 +45,7 @@ export const Login = () => {
 
   const onSubmit = async (data) => {
     setIsLoading(true);
+    setServerError('');
     try {
       const res = await authService.login(data);
       if (res.success) {
@@ -53,7 +54,12 @@ export const Login = () => {
         navigate('/dashboard');
       }
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Login gagal. Periksa kembali kredensial Anda.';
+      const errorMsg =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.email?.[0] ||
+        err.response?.data?.errors?.password?.[0] ||
+        'Kredensial email atau password yang Anda masukkan salah.';
+      setServerError(errorMsg);
       toast.error(errorMsg);
     } finally {
       setIsLoading(false);
@@ -88,6 +94,13 @@ export const Login = () => {
           Gunakan email dan password terdaftar STMIK Bandung
         </p>
       </div>
+
+      {serverError && (
+        <div className="mb-4 p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2.5 shadow-sm animate-shake">
+          <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-600 dark:text-rose-400" />
+          <span>{serverError}</span>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input

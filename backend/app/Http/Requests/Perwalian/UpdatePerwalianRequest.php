@@ -25,4 +25,15 @@ class UpdatePerwalianRequest extends FormRequest
             'catatan_mahasiswa' => ['nullable', 'string'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'semester.required' => 'Semester perkuliahan wajib diisi.',
+            'ipk_semester.required' => 'IPK semester wajib diisi.',
+            'sks_diambil.required' => 'Total SKS yang diambil wajib diisi.',
+            'matakuliah_rencana.required' => 'Rencana mata kuliah wajib dipilih.',
+            'matakuliah_rencana.min' => 'Pilih minimal satu mata kuliah.',
+        ];
+    }
 }

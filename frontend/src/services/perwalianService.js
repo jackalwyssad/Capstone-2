@@ -35,8 +35,8 @@ export const perwalianService = {
     return response.data;
   },
 
-  exportExcel: async () => {
-    const response = await api.get('/export/perwalian/excel');
+  exportExcel: async (params = {}) => {
+    const response = await api.get('/export/perwalian/excel', { params });
     return response.data;
   },
 };

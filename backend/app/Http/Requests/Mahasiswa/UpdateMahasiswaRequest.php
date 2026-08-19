@@ -17,7 +17,8 @@ class UpdateMahasiswaRequest extends FormRequest
 
     public function rules(): array
     {
-        $mhsId = $this->route('mahasiswa') ? $this->route('mahasiswa')->id : $this->id;
+        $routeParam = $this->route('mahasiswa') ?? $this->route('id') ?? $this->id;
+        $mhsId = is_object($routeParam) ? $routeParam->id : $routeParam;
 
         return [
             'nim' => ['required', 'string', 'max:20', 'unique:mahasiswa,nim,'.$mhsId],
@@ -27,6 +28,18 @@ class UpdateMahasiswaRequest extends FormRequest
             'dosen_wali_id' => ['nullable', 'exists:dosen,id'],
             'ipk_terakhir' => ['nullable', 'numeric', 'min:0', 'max:4.00'],
             'sks_lulus' => ['nullable', 'integer', 'min:0'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'nim.required' => 'NIM Mahasiswa wajib diisi.',
+            'nim.unique' => 'NIM sudah terdaftar dalam sistem.',
+            'nama_lengkap.required' => 'Nama lengkap mahasiswa wajib diisi.',
+            'prodi.required' => 'Program studi wajib dipilih.',
+            'prodi.in' => 'Program studi harus Teknik Informatika atau Sistem Informasi.',
+            'angkatan.required' => 'Tahun angkatan mahasiswa wajib diisi.',
         ];
     }
 }

@@ -15,9 +15,35 @@ class ExportImportService
     /**
      * Menghasilkan data struktur array untuk ekspor Excel Perwalian.
      */
-    public function getExportPerwalianData(): array
+    public function getExportPerwalianData(array $filters = []): array
     {
-        $perwalianList = Perwalian::with(['mahasiswa.user', 'dosen.user'])->get();
+        $query = Perwalian::with(['mahasiswa.user', 'dosen.user']);
+
+        if (! empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (! empty($filters['semester'])) {
+            $query->where('semester', $filters['semester']);
+        }
+
+        if (isset($filters['mahasiswa_id'])) {
+            $query->where('mahasiswa_id', $filters['mahasiswa_id']);
+        }
+
+        if (isset($filters['dosen_id'])) {
+            $query->where('dosen_id', $filters['dosen_id']);
+        }
+
+        if (! empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->whereHas('mahasiswa', function ($q) use ($search) {
+                $q->where('nama_lengkap', 'ilike', "%{$search}%")
+                    ->orWhere('nim', 'ilike', "%{$search}%");
+            });
+        }
+
+        $perwalianList = $query->orderBy('created_at', 'desc')->get();
 
         $rows = [];
         $rows[] = ['ID Perwalian', 'NIM', 'Nama Mahasiswa', 'Prodi', 'Dosen Wali', 'Semester', 'IPK', 'SKS', 'Status', 'Tanggal Persetujuan'];

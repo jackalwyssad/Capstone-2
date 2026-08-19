@@ -25,6 +25,11 @@ return new class extends Migration
             $table->string('gelar'); // Gelar akademik (e.g. M.T., M.Kom., Ph.D.)
             $table->string('email')->unique(); // Email resmi dosen
             $table->string('no_hp')->nullable(); // Nomor WhatsApp / Kontak Dosen
+            $table->string('tempat_lahir')->nullable(); // Tempat lahir dosen
+            $table->date('tanggal_lahir')->nullable(); // Tanggal lahir dosen
+            $table->string('pendidikan_terakhir')->nullable(); // Pendidikan terakhir (S2 / S3)
+            $table->text('alamat')->nullable(); // Alamat domisili/kantor dosen
+            $table->string('foto')->nullable(); // Foto / Avatar Dosen
             $table->integer('kuota_bimbingan')->default(30); // Kuota maksimal mahasiswa bimbingan perwalian
             $table->timestamps(); // Created_at dan updated_at
         });

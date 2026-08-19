@@ -9,9 +9,15 @@ import { useAuthStore } from '../store/authStore';
  */
 export const RoleRoute = ({ allowedRoles = [] }) => {
   const { user } = useAuthStore();
-  const userRole = user?.roles?.[0];
+  const userRoles = Array.isArray(user?.roles)
+    ? user.roles
+    : user?.roles
+    ? [user.roles]
+    : [];
 
-  if (!userRole || !allowedRoles.includes(userRole)) {
+  const hasAllowedRole = allowedRoles.some((role) => userRoles.includes(role));
+
+  if (!hasAllowedRole) {
     return <Navigate to="/403" replace />;
   }
 

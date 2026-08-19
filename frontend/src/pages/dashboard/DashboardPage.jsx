@@ -81,27 +81,31 @@ export const DashboardPage = () => {
           {/* TAMPILAN DASHBOARD ADMIN */}
           {hasRole('Admin') && adminData?.data && (
             <div>
+              {/* 3 Interactive Clickable Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
                 <StatCard
                   title="Total Mahasiswa"
                   value={adminData.data.stats.total_mahasiswa}
                   icon={GraduationCap}
                   color="blue"
-                  description="Terdaftar aktif di sistem"
+                  description="Klik untuk kelola data mahasiswa"
+                  onClick={() => navigate('/mahasiswa')}
                 />
                 <StatCard
                   title="Total Dosen Wali"
                   value={adminData.data.stats.total_dosen}
                   icon={Users}
                   color="purple"
-                  description="Dosen pembimbing perwalian"
+                  description="Klik untuk kelola dosen wali"
+                  onClick={() => navigate('/dosen')}
                 />
                 <StatCard
-                  title="Total Transaksi Perwalian"
+                  title="Total Perwalian"
                   value={adminData.data.stats.total_perwalian}
                   icon={FileCheck}
                   color="emerald"
-                  description="Keseluruhan pengajuan perwalian"
+                  description="Klik untuk rekapitulasi perwalian"
+                  onClick={() => navigate('/perwalian')}
                 />
               </div>
 
@@ -125,25 +129,32 @@ export const DashboardPage = () => {
                   value={dosenData.data.stats.total_mahasiswa}
                   icon={GraduationCap}
                   color="blue"
+                  description="Klik untuk daftar mahasiswa asuhan"
+                  onClick={() => navigate('/mahasiswa')}
                 />
                 <StatCard
                   title="Butuh Persetujuan"
                   value={dosenData.data.stats.pending}
                   icon={Clock}
                   color="amber"
-                  description="Status Pending"
+                  description="Pengajuan status Pending"
+                  onClick={() => navigate('/perwalian')}
                 />
                 <StatCard
                   title="Perwalian Disetujui"
                   value={dosenData.data.stats.approved}
                   icon={CheckCircle}
                   color="emerald"
+                  description="Telah diverifikasi & selesai"
+                  onClick={() => navigate('/perwalian')}
                 />
                 <StatCard
                   title="Perwalian Ditolak"
                   value={dosenData.data.stats.rejected}
                   icon={XCircle}
                   color="rose"
+                  description="Perlu revisi mahasiswa"
+                  onClick={() => navigate('/perwalian')}
                 />
               </div>
 
@@ -151,7 +162,7 @@ export const DashboardPage = () => {
               <Card hover={false} className="mt-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 font-sans">
-                    Pengajuan Perwalian Menunggu Persetujuan Anda
+                    Pengajuan Perwalian Menunggu Verifikasi & Persetujuan Anda
                   </h3>
                   <Button size="sm" variant="outline" onClick={() => navigate('/perwalian')}>
                     Lihat Semua
@@ -193,7 +204,7 @@ export const DashboardPage = () => {
                             </td>
                             <td className="p-3 text-right">
                               <Button size="sm" onClick={() => navigate('/perwalian')}>
-                                Review & Catatan
+                                Verifikasi & Catatan
                               </Button>
                             </td>
                           </tr>
@@ -215,28 +226,36 @@ export const DashboardPage = () => {
                   value={mhsData.data.stats.total_perwalian}
                   icon={FileText}
                   color="blue"
+                  description="Riwayat pengajuan"
+                  onClick={() => navigate('/perwalian')}
                 />
                 <StatCard
                   title="Pending"
                   value={mhsData.data.stats.pending}
                   icon={Clock}
                   color="amber"
+                  description="Menunggu verifikasi dosen"
+                  onClick={() => navigate('/perwalian')}
                 />
                 <StatCard
-                  title="Disetujui"
+                  title="Disetujui / Selesai"
                   value={mhsData.data.stats.approved}
                   icon={CheckCircle}
                   color="emerald"
+                  description="Bimbingan selesai"
+                  onClick={() => navigate('/perwalian')}
                 />
                 <StatCard
-                  title="Ditolak"
+                  title="Perlu Revisi / Ditolak"
                   value={mhsData.data.stats.rejected}
                   icon={XCircle}
                   color="rose"
+                  description="Perlu perbaikan"
+                  onClick={() => navigate('/perwalian')}
                 />
               </div>
 
-              {/* Status Perwalian Aktif & Dosen Wali Info */}
+              {/* Status Perwalian Aktif & Profil Dosen Wali Anda */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card hover={false} className="lg:col-span-2">
                   <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-4 font-sans flex items-center justify-between">
@@ -256,7 +275,7 @@ export const DashboardPage = () => {
                           </p>
                         </div>
                         <div>
-                          <p className="text-slate-400">IPK Semester</p>
+                          <p className="text-slate-400">IPK Semester Lalu</p>
                           <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">
                             {mhsData.data.active_perwalian.ipk_semester}
                           </p>
@@ -275,49 +294,91 @@ export const DashboardPage = () => {
                         </div>
                       </div>
 
+                      {/* Uraian Konsultasi Mahasiswa */}
+                      {mhsData.data.active_perwalian.catatan_mahasiswa && (
+                        <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                          <p className="font-bold text-slate-900 dark:text-slate-100">Uraian Konsultasi Anda:</p>
+                          <p className="text-slate-600 dark:text-slate-400 mt-0.5">{mhsData.data.active_perwalian.catatan_mahasiswa}</p>
+                        </div>
+                      )}
+
+                      {/* Catatan / Penyelesaian Dosen Wali */}
                       {mhsData.data.active_perwalian.catatan_dosen && (
                         <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-200">
-                          <p className="font-bold">Catatan Dosen Wali:</p>
-                          <p className="mt-0.5">{mhsData.data.active_perwalian.catatan_dosen}</p>
+                          <p className="font-bold flex items-center gap-1.5">
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            Catatan / Penyelesaian dari Dosen Wali:
+                          </p>
+                          <p className="mt-0.5 font-medium">{mhsData.data.active_perwalian.catatan_dosen}</p>
                         </div>
                       )}
                     </div>
                   ) : (
                     <div className="p-8 text-center text-slate-400">
-                      Anda belum pernah mengajukan perwalian.
+                      Anda belum pernah mengajukan perwalian. Klik tombol "Pengajuan Perwalian" untuk memulai.
                     </div>
                   )}
                 </Card>
 
-                {/* Info Dosen Wali */}
-                <Card hover={false}>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-4 font-sans">
-                    Dosen Pembimbing Akademik
+                {/* Profil Dosen Wali Anda */}
+                <Card hover={false} className="border-t-4 border-t-primary-600">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-4 font-sans flex items-center justify-between">
+                    <span>Profil Dosen Wali Anda</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-100 dark:bg-primary-950 text-primary-600 dark:text-primary-300 font-extrabold">
+                      Pembimbing Akademik
+                    </span>
                   </h3>
                   {mhsData.data.dosen_wali ? (
-                    <div className="space-y-3 text-xs">
-                      <div className="p-4 rounded-xl bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-900">
-                        <p className="font-extrabold text-sm text-primary-900 dark:text-primary-100">
-                          {mhsData.data.dosen_wali.nama_lengkap}
-                        </p>
-                        <p className="text-primary-600 dark:text-primary-400 font-semibold mt-0.5">
-                          NIDN: {mhsData.data.dosen_wali.nidn}
-                        </p>
+                    <div className="space-y-4 text-xs">
+                      <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
+                        <img
+                          src={mhsData.data.dosen_wali.foto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(mhsData.data.dosen_wali.nama_lengkap)}`}
+                          alt={mhsData.data.dosen_wali.nama_lengkap}
+                          className="w-14 h-14 rounded-2xl object-cover border-2 border-primary-500 shadow-sm"
+                        />
+                        <div>
+                          <p className="font-extrabold text-sm text-slate-900 dark:text-slate-100">
+                            {mhsData.data.dosen_wali.nama_lengkap}
+                          </p>
+                          <p className="text-primary-600 dark:text-primary-400 font-bold text-[11px]">
+                            NIDN: {mhsData.data.dosen_wali.nidn}
+                          </p>
+                          {mhsData.data.dosen_wali.pendidikan_terakhir && (
+                            <p className="text-[10px] text-slate-400">
+                              {mhsData.data.dosen_wali.pendidikan_terakhir}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <div className="space-y-1 text-slate-600 dark:text-slate-400">
-                        <p>
-                          <strong className="text-slate-900 dark:text-slate-200">Email:</strong>{' '}
-                          {mhsData.data.dosen_wali.email}
-                        </p>
-                        <p>
-                          <strong className="text-slate-900 dark:text-slate-200">No. WhatsApp:</strong>{' '}
-                          {mhsData.data.dosen_wali.no_hp || '-'}
-                        </p>
+
+                      <div className="space-y-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800/60 text-slate-600 dark:text-slate-400">
+                        <div className="flex justify-between items-center py-1 border-b border-slate-200/50 dark:border-slate-800/50">
+                          <span className="text-slate-400">Email Official</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">{mhsData.data.dosen_wali.email}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-1 border-b border-slate-200/50 dark:border-slate-800/50">
+                          <span className="text-slate-400">WhatsApp / Kontak</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">{mhsData.data.dosen_wali.no_hp || '-'}</span>
+                        </div>
+                        {mhsData.data.dosen_wali.tempat_lahir && (
+                          <div className="flex justify-between items-center py-1 border-b border-slate-200/50 dark:border-slate-800/50">
+                            <span className="text-slate-400">Tempat, Tgl Lahir</span>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">
+                              {mhsData.data.dosen_wali.tempat_lahir}{mhsData.data.dosen_wali.tanggal_lahir ? `, ${mhsData.data.dosen_wali.tanggal_lahir.slice(0, 10)}` : ''}
+                            </span>
+                          </div>
+                        )}
+                        {mhsData.data.dosen_wali.alamat && (
+                          <div className="py-1">
+                            <span className="text-slate-400 block mb-0.5">Alamat Kantor / Domisili</span>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">{mhsData.data.dosen_wali.alamat}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ) : (
-                    <p className="text-xs text-rose-500 font-semibold">
-                      Anda belum ditetapkan Dosen Wali. Hubungi Admin.
+                    <p className="text-xs text-rose-500 font-semibold p-4 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200">
+                      Anda belum ditetapkan Dosen Wali. Silakan hubungi Administrator STMIK Bandung.
                     </p>
                   )}
                 </Card>

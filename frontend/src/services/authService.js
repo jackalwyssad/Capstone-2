@@ -21,12 +21,30 @@ export const authService = {
   },
 
   updateProfile: async (data) => {
-    const response = await api.put('/auth/profile', data);
+    const response = await api.post('/auth/profile', data);
+    return response.data;
+  },
+
+  uploadAvatar: async (file) => {
+    const formData = new FormData();
+    formData.append('foto', file);
+    const response = await api.post('/auth/upload-avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 
   forgotPassword: async (data) => {
     const response = await api.post('/auth/forgot-password', data);
+    return response.data;
+  },
+
+  verifyResetToken: async (email, token) => {
+    const response = await api.get(
+      `/auth/verify-reset-token?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`
+    );
     return response.data;
   },
 

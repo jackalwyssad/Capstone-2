@@ -15,9 +15,13 @@ Dokumen ini merupakan **Buku Panduan Teknis & Tutorial Komprehensif** untuk selu
 5. [Tutorial Lapisan Repository & Service Pattern (Aturan Bisnis)](#5-tutorial-lapisan-repository--service-pattern-aturan-bisnis)
 6. [Tutorial Validasi Form Request & JSON API Transformer (Resource)](#6-tutorial-validasi-form-request--json-api-transformer-resource)
 7. [Tutorial Alur Kerja (Workflow) Inti Perwalian & Audit Log](#7-tutorial-alur-kerja-workflow-inti-perwalian--audit-log)
-8. [Tutorial Lengkap Swagger OpenAPI (Install, Anotasi, UI Web)](#8-tutorial-lengkap-swagger-openapi-install-anotasi-ui-web)
-9. [Tutorial Pengujian Otomatis (PHPUnit Feature Tests)](#9-tutorial-pengujian-otomatis-phpunit-feature-tests)
-10. [Standar Format Kode & Penanganan Error Terpusat](#10-standar-format-kode--penanganan-error-terpusat)
+8. [Tutorial Modul Mata Kuliah (Matakuliah CRUD)](#8-tutorial-modul-mata-kuliah-matakuliah-crud)
+9. [Tutorial Manajemen User & Integrasi Otomatis Mahasiswa/Dosen](#9-tutorial-manajemen-user--integrasi-otomatis-mahasiswadosen)
+10. [Tutorial Export/Import Data Perwalian (Scoped Per Role)](#10-tutorial-exportimport-data-perwalian-scoped-per-role)
+11. [Tutorial Penanganan Error Terpusat (Exception Handler)](#11-tutorial-penanganan-error-terpusat-exception-handler)
+12. [Tutorial Lengkap Swagger OpenAPI (Install, Anotasi, UI Web)](#12-tutorial-lengkap-swagger-openapi-install-anotasi-ui-web)
+13. [Tutorial Pengujian Otomatis (PHPUnit Feature Tests)](#13-tutorial-pengujian-otomatis-phpunit-feature-tests)
+14. [Standar Format Kode & Trait API Response](#14-standar-format-kode--trait-api-response)
 
 ---
 
@@ -32,7 +36,7 @@ Aplikasi tidak menumpuk logika di Controller, melainkan membaginya menjadi lapis
 [1. Routes (routes/api.php)] ──▶ Menerapkan Middleware (Sanctum, Role Spatie)
          │
          ▼
-[2. Form Requests (app/Http/Requests/)] ──▶ Validasi format input, tipe data, & rule Zod-equivalent
+[2. Form Requests (app/Http/Requests/)] ──▶ Validasi input & pesan kesalahan Bahasa Indonesia
          │
          ▼
 [3. Controllers (app/Http/Controllers/Api/v1/)] ──▶ Menerima request & memanggil Service
@@ -55,12 +59,21 @@ Aplikasi tidak menumpuk logika di Controller, melainkan membaginya menjadi lapis
 
 ### Lokasi File-File Arsitektur:
 - **Routes**: `routes/api.php`
-- **Controllers**: `app/Http/Controllers/Api/v1/` (`AuthController.php`, `DashboardController.php`, `DosenController.php`, `MahasiswaController.php`, `PerwalianController.php`, `UserController.php`, `ExportImportController.php`)
-- **Services**: `app/Services/` (`AuthService.php`, `DosenService.php`, `MahasiswaService.php`, `PerwalianService.php`, `UserService.php`, `ExportImportService.php`)
-- **Interfaces**: `app/Interfaces/` (`AuthRepositoryInterface.php`, `DosenRepositoryInterface.php`, `MahasiswaRepositoryInterface.php`, `PerwalianRepositoryInterface.php`, `UserRepositoryInterface.php`)
-- **Repositories**: `app/Repositories/Eloquent/` (`AuthRepository.php`, `DosenRepository.php`, `MahasiswaRepository.php`, `PerwalianRepository.php`, `UserRepository.php`)
-- **Providers**: `app/Providers/RepositoryServiceProvider.php` (Menghubungkan Interface dengan Implementasi Repository di IoC Container)
+- **Controllers**: `app/Http/Controllers/Api/v1/`
+  - `AuthController.php` — Login, Logout, Register, ForgotPassword, ResetPassword, Profile, Upload Avatar
+  - `DashboardController.php` — Statistik & Metrik Dashboard multi-role
+  - `DosenController.php` — CRUD Dosen Wali & Bulk Assign Wali
+  - `MahasiswaController.php` — CRUD Mahasiswa & Import Massal JSON
+  - `MatakuliahController.php` — CRUD Mata Kuliah (termasuk kode otomatis)
+  - `PerwalianController.php` — Pengajuan, Edit, Hapus, Approve/Reject, Rekap
+  - `UserController.php` — Manajemen User & Role Spatie (Admin Only)
+  - `ExportImportController.php` — Export Excel/PDF Perwalian Scoped per Role
+- **Services**: `app/Services/` (`AuthService`, `DosenService`, `MahasiswaService`, `PerwalianService`, `UserService`, `ExportImportService`)
+- **Interfaces**: `app/Interfaces/` (Contract Repository)
+- **Repositories**: `app/Repositories/Eloquent/` (Implementasi Query Database)
+- **Providers**: `app/Providers/RepositoryServiceProvider.php` (IoC Container Binding)
 - **Traits**: `app/Traits/ApiResponseTrait.php` (Standarisasi response JSON API)
+- **Exception Handler**: `app/Exceptions/Handler.php` (Error Bahasa Indonesia)
 
 ---
 
@@ -70,7 +83,7 @@ Aplikasi tidak menumpuk logika di Controller, melainkan membaginya menjadi lapis
 - PHP 8.1.10+
 - Ekstensi PHP yang wajib aktif di `php.ini`:
   `extension=pdo_pgsql`, `extension=pgsql`, `extension=mbstring`, `extension=openssl`, `extension=curl`, `extension=fileinfo`, `extension=gd`, `extension=zip`
-- PostgreSQL 18.x running pada port `5432`
+- PostgreSQL running pada port `5432`
 - Composer 2.x
 
 ### Langkah 2: Install Dependensi
@@ -84,7 +97,7 @@ Buka file `backend/.env` dan pastikan konfigurasi berikut terisi:
 ```env
 APP_NAME="Perwalian STMIK Bandung"
 APP_ENV=local
-APP_KEY=base64:X5Hajtsl5D8xhPjuJ5qNTYEvccSY0wsUAWM7HF4QG/8=
+APP_KEY=base64:...
 APP_DEBUG=true
 APP_URL=http://127.0.0.1:8000
 L5_SWAGGER_CONST_HOST=http://127.0.0.1:8000/api/v1
@@ -95,6 +108,14 @@ DB_PORT=5432
 DB_DATABASE=db_perwalian_stmik
 DB_USERNAME=postgres
 DB_PASSWORD=
+
+MAIL_MAILER=smtp
+MAIL_HOST=sandbox.smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=...
+MAIL_PASSWORD=...
+MAIL_FROM_ADDRESS=noreply@stmikbandung.ac.id
+MAIL_FROM_NAME="STMIK Bandung - Sistem Perwalian"
 ```
 
 ---
@@ -106,8 +127,9 @@ DB_PASSWORD=
 2. `roles & permissions` (Spatie): Menyimpan hak akses `Admin`, `Dosen`, dan `Mahasiswa`.
 3. `dosen`: Terhubung 1-to-1 dengan `users` (NIDN, Nama, Gelar, Kuota Bimbingan).
 4. `mahasiswa`: Terhubung 1-to-1 dengan `users` dan Foreign Key `dosen_wali_id` ke tabel `dosen`.
-5. `perwalian`: Foreign Key ke `mahasiswa_id` dan `dosen_id`, menyimpan semester, IPK, SKS, data rencana matakuliah (JSON format), status (`Pending`, `Disetujui`, `Ditolak`), serta catatan mahasiswa & dosen.
-6. `perwalian_logs`: Menyimpan jejak histori perubahan status perwalian (*audit trail*).
+5. `matakuliah`: Menyimpan data mata kuliah (Kode, Nama, SKS, Prodi, Semester, Ruangan, Dosen Pengampu).
+6. `perwalian`: Foreign Key ke `mahasiswa_id` dan `dosen_id`, menyimpan semester, IPK, SKS, data rencana matakuliah (JSON format), status (`Pending`, `Disetujui`, `Ditolak`), serta catatan mahasiswa & dosen.
+7. `perwalian_logs`: Menyimpan jejak histori perubahan status perwalian (*audit trail*).
 
 ### B. Menjalankan Migrasi & Seeder Lengkap
 Jalankan satu perintah ini di terminal:
@@ -116,10 +138,11 @@ php artisan migrate:fresh --seed
 ```
 
 ### C. Data Seeder Siap Pakai untuk Testing:
-- **1 Akun Admin**: `admin@stmikbandung.ac.id` | Password: `Admin123!`
-- **5 Dosen Wali**: `dosen1@stmikbandung.ac.id` s.d `dosen5@stmikbandung.ac.id` | Password: `Dosen123!`
-- **50 Mahasiswa**: `mhs1@student.stmikbandung.ac.id` s.d `mhs50@student.stmikbandung.ac.id` | Password: `Mahasiswa123!`
+- **1 Akun Admin**: `admin@stmikbandung.ac.id` | Password: `Admin123`
+- **5 Dosen Wali**: `dosen1@stmikbandung.ac.id` s.d `dosen5@stmikbandung.ac.id` | Password: `Dosen123`
+- **50 Mahasiswa**: `3200001@student.stmikbandung.ac.id` s.d `3200050@student.stmikbandung.ac.id` | Password: `Mahasiswa123`
 - **100 Transaksi Perwalian** dengan status bervariasi (Disetujui, Pending, Ditolak) beserta audit log.
+- **Data Mata Kuliah Contoh** untuk Prodi Teknik Informatika dan Sistem Informasi.
 
 ---
 
@@ -142,13 +165,21 @@ Di file `routes/api.php`, rute dikelompokkan menggunakan middleware `role:Admin`
 // Rute Khusus Administrator
 Route::middleware(['auth:sanctum', 'role:Admin'])->group(function () {
     Route::apiResource('users', UserController::class);
+    Route::apiResource('matakuliah', MatakuliahController::class);
     Route::post('dosen/assign-wali', [DosenController::class, 'assignWali']);
     Route::post('mahasiswa/import', [MahasiswaController::class, 'import']);
 });
 
-// Rute Khusus Dosen Wali
-Route::middleware(['auth:sanctum', 'role:Dosen'])->group(function () {
+// Rute Dapat Diakses Admin & Dosen
+Route::middleware(['auth:sanctum', 'role:Admin|Dosen'])->group(function () {
+    Route::get('matakuliah', [MatakuliahController::class, 'index']);
     Route::post('perwalian/{id}/approve-reject', [PerwalianController::class, 'approveReject']);
+    Route::get('export/perwalian/excel', [ExportImportController::class, 'exportExcel']);
+});
+
+// Rute Khusus Mahasiswa
+Route::middleware(['auth:sanctum', 'role:Mahasiswa'])->group(function () {
+    Route::apiResource('perwalian', PerwalianController::class)->except(['index']);
 });
 ```
 
@@ -176,7 +207,7 @@ interface MahasiswaRepositoryInterface
 ```
 
 **Implementasi Repository (`app/Repositories/Eloquent/MahasiswaRepository.php`)**:
-Menggunakan operator **`ILIKE`** agar pencarian nama/NIM di PostgreSQL bersifat *Case-Insensitive* (tidak membedakan huruf besar/kecil):
+Menggunakan operator **`ILIKE`** agar pencarian nama/NIM di PostgreSQL bersifat *Case-Insensitive*:
 ```php
 public function getAllPaginated(array $filters = [], int $perPage = 10): LengthAwarePaginator
 {
@@ -209,45 +240,64 @@ public function register(): void
 
 ## 📋 6. TUTORIAL VALIDASI FORM REQUEST & JSON API RESOURCE
 
-### A. Validasi Input Terpisah (Form Requests)
-Lokasi: `app/Http/Requests/Perwalian/StorePerwalianRequest.php`  
-Setiap input divalidasi dengan pesan kesalahan berbahasa Indonesia yang jelas:
+### A. Validasi Input Terpisah (Form Requests) — Bahasa Indonesia
+Setiap Form Request memiliki method `messages()` dengan pesan validasi **Bahasa Indonesia** yang jelas:
 
 ```php
+// app/Http/Requests/Mahasiswa/UpdateMahasiswaRequest.php
 public function rules(): array
 {
+    $routeParam = $this->route('mahasiswa') ?? $this->route('id') ?? $this->id;
+    $mhsId = is_object($routeParam) ? $routeParam->id : $routeParam;
+
     return [
-        'semester' => ['required', 'string', 'max:50'],
-        'ipk_semester' => ['required', 'numeric', 'min:0.00', 'max:4.00'],
-        'sks_diambil' => ['required', 'integer', 'min:1', 'max:24'],
-        'matakuliah_rencana' => ['required', 'array', 'min:1'],
-        'matakuliah_rencana.*.kode' => ['required', 'string'],
-        'matakuliah_rencana.*.nama' => ['required', 'string'],
-        'matakuliah_rencana.*.sks' => ['required', 'integer', 'min:1', 'max:6'],
-        'catatan_mahasiswa' => ['nullable', 'string', 'max:500'],
+        'nim'          => ['required', 'string', 'max:20', 'unique:mahasiswa,nim,'.$mhsId],
+        'nama_lengkap' => ['required', 'string', 'max:255'],
+        'prodi'        => ['required', 'in:Teknik Informatika,Sistem Informasi'],
+        'angkatan'     => ['required', 'string', 'max:10'],
+        'dosen_wali_id'=> ['nullable', 'exists:dosen,id'],
+        'ipk_terakhir' => ['nullable', 'numeric', 'min:0', 'max:4.00'],
+        'sks_lulus'    => ['nullable', 'integer', 'min:0'],
+    ];
+}
+
+public function messages(): array
+{
+    return [
+        'nim.required'          => 'NIM Mahasiswa wajib diisi.',
+        'nim.unique'            => 'NIM sudah terdaftar dalam sistem.',
+        'nama_lengkap.required' => 'Nama lengkap mahasiswa wajib diisi.',
+        'prodi.required'        => 'Program studi wajib dipilih.',
+        'prodi.in'              => 'Program studi harus Teknik Informatika atau Sistem Informasi.',
+        'angkatan.required'     => 'Tahun angkatan mahasiswa wajib diisi.',
     ];
 }
 ```
 
-### B. Standardisasi JSON Output (API Resources)
-Lokasi: `app/Http/Resources/PerwalianResource.php`  
-Memastikan output JSON selalu rapi dan konsisten:
+> **Catatan Penting**: `UpdateMahasiswaRequest` dan `UpdateDosenRequest` menggunakan resolusi ID yang aman:
+> ```php
+> $routeParam = $this->route('mahasiswa') ?? $this->route('id') ?? $this->id;
+> $mhsId = is_object($routeParam) ? $routeParam->id : $routeParam;
+> ```
+> Ini mencegah error `Attempt to read property "id" on string` ketika route binding mengembalikan tipe data string (ID numerik sebagai string) bukan objek Model.
 
+### B. Standardisasi JSON Output (API Resources)
+Lokasi: `app/Http/Resources/PerwalianResource.php`
 ```php
 public function toArray(Request $request): array
 {
     return [
-        'id' => $this->id,
-        'semester' => $this->semester,
-        'ipk_semester' => (string) $this->ipk_semester,
-        'sks_diambil' => (int) $this->sks_diambil,
-        'matakuliah_rencana' => $this->matakuliah_rencana,
-        'status' => $this->status,
-        'catatan_mahasiswa' => $this->catatan_mahasiswa,
-        'catatan_dosen' => $this->catatan_dosen,
-        'tgl_persetujuan' => $this->tgl_persetujuan ? $this->tgl_persetujuan->toISOString() : null,
-        'mahasiswa' => new MahasiswaResource($this->whenLoaded('mahasiswa')),
-        'dosen' => new DosenResource($this->whenLoaded('dosen')),
+        'id'                  => $this->id,
+        'semester'            => $this->semester,
+        'ipk_semester'        => (string) $this->ipk_semester,
+        'sks_diambil'         => (int) $this->sks_diambil,
+        'matakuliah_rencana'  => $this->matakuliah_rencana,
+        'status'              => $this->status,
+        'catatan_mahasiswa'   => $this->catatan_mahasiswa,
+        'catatan_dosen'       => $this->catatan_dosen,
+        'tgl_persetujuan'     => $this->tgl_persetujuan?->toISOString(),
+        'mahasiswa'           => new MahasiswaResource($this->whenLoaded('mahasiswa')),
+        'dosen'               => new DosenResource($this->whenLoaded('dosen')),
     ];
 }
 ```
@@ -278,34 +328,214 @@ Lokasi File: **`app/Services/PerwalianService.php`**
    - Dosen mengisi keputusan (`Disetujui` / `Ditolak`) beserta `catatan_dosen`.
    - Sistem secara otomatis mencatat riwayat perubahan status ke tabel `perwalian_logs` sebagai jejak audit.
 
----
-
-### B. Tutorial Fitur Operasi Massal (Bulk Operations & Import/Export Data)
+### B. Tutorial Fitur Operasi Massal (Bulk Operations)
 
 1. **Penetapan Dosen Wali Massal (`DosenService::assignWali`)**:
-   - Lokasi: `app/Services/DosenService.php`
-   - Memungkinkan Admin memilih banyak ID mahasiswa sekaligus (`mahasiswa_ids = [1, 2, 3, ...]`) dan mengaitkannya ke satu Dosen Wali:
-     ```php
-     public function assignWali(array $data): bool
-     {
-         return Mahasiswa::whereIn('id', $data['mahasiswa_ids'])
-             ->update(['dosen_wali_id' => $data['dosen_id']]);
-     }
-     ```
+   ```php
+   public function assignWali(array $data): bool
+   {
+       return Mahasiswa::whereIn('id', $data['mahasiswa_ids'])
+           ->update(['dosen_wali_id' => $data['dosen_id']]);
+   }
+   ```
+
 2. **Impor Massal Data Mahasiswa (`MahasiswaService::importMahasiswa`)**:
-   - Lokasi: `app/Services/MahasiswaService.php`
-   - Menerima payload array data JSON / Excel, membuat akun User otomatis jika belum ada, dan memasukkan data mahasiswa ke tabel PostgreSQL.
-3. **Ekspor Data Rekapitulasi (`ExportImportService::exportPerwalianData`)**:
-   - Lokasi: `app/Services/ExportImportService.php`
-   - Menyiapkan data rekap tabular untuk di-download ke format file spreadsheet dan PDF.
+   - Menerima payload array data JSON, membuat akun User otomatis jika belum ada, dan memasukkan data mahasiswa secara massal.
 
 ---
 
-## 📖 8. TUTORIAL LENGKAP SWAGGER OPENAPI (INSTALL, ANOTASI, UI WEB)
+## 📚 8. TUTORIAL MODUL MATA KULIAH (MATAKULIAH CRUD)
+
+Modul Mata Kuliah adalah fitur baru yang memungkinkan Administrator mengelola daftar seluruh mata kuliah yang ditawarkan oleh STMIK Bandung.
+
+### A. Struktur Data Model `Matakuliah`
+```php
+// app/Models/Matakuliah.php
+protected $fillable = [
+    'kode',           // Contoh: IF-301, SI-201, MKU-101
+    'nama',           // Nama mata kuliah
+    'sks',            // Jumlah SKS (1-6)
+    'prodi',          // Teknik Informatika / Sistem Informasi / Umum (MKU)
+    'semester',       // 1-8
+    'ruangan',        // Lab IF-1, Ruang 101, Aula, dll
+    'dosen_pengampu', // Nama dosen pengampu (teks fleksibel)
+];
+```
+
+### B. Endpoint API Matakuliah
+| Method | Endpoint | Akses | Fungsi |
+|:---|:---|:---|:---|
+| GET | `/api/v1/matakuliah` | Admin, Dosen | Daftar semua mata kuliah (filter prodi, semester, search) |
+| POST | `/api/v1/matakuliah` | Admin Only | Tambah mata kuliah baru |
+| PUT | `/api/v1/matakuliah/{id}` | Admin Only | Update data mata kuliah |
+| DELETE | `/api/v1/matakuliah/{id}` | Admin Only | Hapus mata kuliah |
+
+### C. Kode Otomatis Sequential
+Backend menyediakan endpoint `GET /api/v1/matakuliah/last-code?prodi=...&semester=...` yang mengembalikan kode mata kuliah terakhir berdasarkan kombinasi Prodi dan Semester. Frontend kemudian menghasilkan kode berikutnya secara otomatis:
+```
+Contoh: Jika kode terakhir Prodi "Sistem Informasi" Semester 3 adalah "SI-303",
+        maka frontend menyarankan "SI-304" sebagai kode berikutnya.
+```
+
+---
+
+## 👤 9. TUTORIAL MANAJEMEN USER & INTEGRASI OTOMATIS MAHASISWA/DOSEN
+
+Lokasi File: `app/Services/UserService.php` dan `app/Http/Controllers/Api/v1/UserController.php`
+
+### A. Pembuatan User Terintegrasi (Transaksional)
+Saat Admin membuat akun baru, `UserService::createUser` secara otomatis:
+- Untuk **Role Mahasiswa**: Membuat record `User` + record `Mahasiswa` (NIM, Prodi, Angkatan) + menetapkan `dosen_wali_id` jika dipilih.
+- Untuk **Role Dosen**: Membuat record `User` + record `Dosen` (NIDN, Gelar).
+
+```php
+// app/Services/UserService.php
+public function createUser(array $data): User
+{
+    return DB::transaction(function () use ($data) {
+        $user = $this->userRepository->create([
+            'name'     => $data['name'],
+            'email'    => $data['email'],
+            'password' => Hash::make($data['password'] ?? 'Default123'),
+        ]);
+
+        $user->assignRole($data['role']);
+
+        if ($data['role'] === 'Mahasiswa') {
+            Mahasiswa::create([
+                'user_id'       => $user->id,
+                'nim'           => $data['nim'],
+                'nama_lengkap'  => $data['name'],
+                'prodi'         => $data['prodi'],
+                'angkatan'      => $data['angkatan'],
+                'dosen_wali_id' => $data['dosen_wali_id'] ?? null,
+            ]);
+        }
+
+        if ($data['role'] === 'Dosen') {
+            Dosen::create([
+                'user_id'      => $user->id,
+                'nidn'         => $data['nidn'],
+                'nama_lengkap' => $data['name'],
+                'gelar'        => $data['gelar'] ?? '',
+            ]);
+        }
+
+        return $user;
+    });
+}
+```
+
+### B. Validasi Tambahan di UserController
+```php
+// app/Http/Controllers/Api/v1/UserController.php
+$request->validate([
+    'name'          => 'required|string|max:255',
+    'email'         => 'required|email|unique:users,email',
+    'role'          => 'required|in:Admin,Dosen,Mahasiswa',
+    // Field dinamis berdasarkan role
+    'nim'           => 'required_if:role,Mahasiswa|string|max:20',
+    'prodi'         => 'required_if:role,Mahasiswa|in:Teknik Informatika,Sistem Informasi',
+    'angkatan'      => 'required_if:role,Mahasiswa|string|max:10',
+    'dosen_wali_id' => 'nullable|exists:dosen,id',
+    'nidn'          => 'required_if:role,Dosen|string|max:20',
+    'gelar'         => 'required_if:role,Dosen|string|max:50',
+]);
+```
+
+---
+
+## 📤 10. TUTORIAL EXPORT/IMPORT DATA PERWALIAN (SCOPED PER ROLE)
+
+Lokasi File: `app/Http/Controllers/Api/v1/ExportImportController.php` dan `app/Services/ExportImportService.php`
+
+### A. Export Scoped Per Role
+Data yang diekspor dikunci sesuai role pengguna yang sedang login:
+
+```php
+// app/Http/Controllers/Api/v1/ExportImportController.php
+public function exportExcel(Request $request): JsonResponse
+{
+    $user = $request->user();
+    $filters = $request->all();
+
+    // Scope: Mahasiswa hanya bisa export datanya sendiri
+    if ($user->hasRole('Mahasiswa') && $user->mahasiswa) {
+        $filters['mahasiswa_id'] = $user->mahasiswa->id;
+    }
+
+    // Scope: Dosen hanya bisa export mahasiswa bimbingannya
+    if ($user->hasRole('Dosen') && $user->dosen) {
+        $filters['dosen_id'] = $user->dosen->id;
+    }
+
+    $data = $this->exportImportService->getExportPerwalianData($filters);
+    return $this->successResponse($data, 'Data rekap perwalian berhasil diambil.');
+}
+```
+
+### B. Filter Query Export
+`ExportImportService::getExportPerwalianData` mendukung filter berikut:
+- `mahasiswa_id`: Filter berdasarkan ID mahasiswa tertentu
+- `dosen_id`: Filter berdasarkan ID dosen tertentu (ambil semua mahasiswa bimbingannya)
+- `status`: Filter status (`Pending`, `Disetujui`, `Ditolak`)
+- `semester`: Filter semester akademik
+- `search`: Pencarian nama atau NIM mahasiswa
+
+---
+
+## 🛡️ 11. TUTORIAL PENANGANAN ERROR TERPUSAT (EXCEPTION HANDLER)
+
+Lokasi File: `app/Exceptions/Handler.php`
+
+### Pesan Error Bahasa Indonesia
+Seluruh exception umum yang mungkin terjadi direspons dengan pesan **Bahasa Indonesia** yang ramah pengguna:
+
+```php
+// app/Exceptions/Handler.php
+public function register(): void
+{
+    $this->reportable(function (Throwable $e) {});
+
+    // 401 - Sesi berakhir / belum login
+    $this->renderable(function (\Illuminate\Auth\AuthenticationException $e, $request) {
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sesi login Anda telah berakhir atau belum terautentikasi. Silakan login kembali.',
+            ], 401);
+        }
+    });
+
+    // 403 - Tidak punya hak akses
+    $this->renderable(function (\Spatie\Permission\Exceptions\UnauthorizedException $e, $request) {
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk membuka halaman atau fitur ini.',
+            ], 403);
+        }
+    });
+
+    // 404 - Data tidak ditemukan
+    $this->renderable(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, $request) {
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data yang Anda cari tidak ditemukan di dalam sistem.',
+            ], 404);
+        }
+    });
+}
+```
+
+---
+
+## 📖 12. TUTORIAL LENGKAP SWAGGER OPENAPI (INSTALL, ANOTASI, UI WEB)
 
 ### ❓ Apakah Butuh Menulis File HTML Manual untuk Swagger?
-> **TIDAK BUTUH HTML MANUAL.**  
-> Package `darkaonline/l5-swagger` secara otomatis menghasilkan tampilan antarmuka web interaktif melalui Blade View bawaan. Kita hanya perlu menulis komentar anotasi PHP di Controller!
+> **TIDAK BUTUH HTML MANUAL.**
+> Package `darkaonline/l5-swagger` secara otomatis menghasilkan tampilan antarmuka web interaktif. Kita hanya perlu menulis komentar anotasi PHP di Controller!
 
 ### 🛠️ Langkah-Langkah Lengkap Setup Swagger:
 
@@ -319,7 +549,7 @@ composer require "darkaonline/l5-swagger:^8.6"
 php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider"
 ```
 
-#### Step 3: Pasang Anotasi Root di Base Controller (`app/Http/Controllers/Controller.php`)
+#### Step 3: Pasang Anotasi Root di Base Controller
 ```php
 /**
  * @OA\Info(
@@ -328,77 +558,75 @@ php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider"
  *     description="Dokumentasi REST API Enterprise Sistem Perwalian Mahasiswa STMIK Bandung.",
  *     @OA\Contact(email="admin@stmikbandung.ac.id")
  * )
- *
- * @OA\Server(
- *     url="http://127.0.0.1:8000/api/v1",
- *     description="Server API Lokal STMIK Bandung"
- * )
- *
+ * @OA\Server(url="http://127.0.0.1:8000/api/v1", description="Server API Lokal")
  * @OA\SecurityScheme(
- *     securityScheme="bearerAuth",
- *     type="http",
- *     scheme="bearer",
- *     bearerFormat="JWT",
- *     description="Masukkan token Bearer Sanctum (Contoh: 'Bearer {token}')"
+ *     securityScheme="bearerAuth", type="http", scheme="bearer", bearerFormat="JWT"
  * )
  */
 class Controller extends BaseController { ... }
 ```
 
-#### Step 4: Pasang Anotasi Endpoint pada Controller Method
-Contoh pada `app/Http/Controllers/Api/v1/PerwalianController.php`:
+#### Step 4: Contoh Anotasi Endpoint
 ```php
 /**
  * @OA\Get(
- *     path="/perwalian",
- *     summary="Daftar Data Perwalian",
- *     description="Mengambil daftar perwalian dengan filter status, semester, dan pagination.",
- *     tags={"Perwalian"},
+ *     path="/matakuliah",
+ *     summary="Daftar Mata Kuliah",
+ *     tags={"Matakuliah"},
  *     security={{"bearerAuth":{}}},
- *     @OA\Parameter(name="status", in="query", required=false, description="Pending / Disetujui / Ditolak"),
- *     @OA\Parameter(name="semester", in="query", required=false, description="Contoh: 2025/2026 Ganjil"),
- *     @OA\Parameter(name="page", in="query", required=false, example=1),
- *     @OA\Response(response=200, description="Daftar perwalian berhasil diambil")
+ *     @OA\Parameter(name="prodi", in="query", required=false),
+ *     @OA\Parameter(name="semester", in="query", required=false),
+ *     @OA\Response(response=200, description="Daftar mata kuliah berhasil diambil")
  * )
  */
 public function index(Request $request): JsonResponse { ... }
 ```
 
-#### Step 5: Generate File Dokumentasi
-Jalankan perintah ini setiap kali ada perubahan anotasi:
+#### Step 5: Generate & Akses Dokumentasi
 ```bash
 php artisan l5-swagger:generate
 ```
-
-#### Step 6: Akses & Testing Swagger UI di Browser
-1. Jalankan `php artisan serve --port=8000`.
-2. Buka link: **[http://127.0.0.1:8000/api/documentation](http://127.0.0.1:8000/api/documentation)**.
-3. Klik tombol hijau **"Authorize"** 🔓 di kanan atas, masukkan token Bearer Sanctum, dan klik **"Authorize"**. Semua endpoint siap diuji langsung!
+Buka: **[http://127.0.0.1:8000/api/documentation](http://127.0.0.1:8000/api/documentation)**
 
 ---
 
-## 🧪 9. TUTORIAL PENGUJIAN OTOMATIS (PHPUNIT FEATURE TESTS)
+## 🧪 13. TUTORIAL PENGUJIAN OTOMATIS (PHPUNIT FEATURE TESTS)
 
 Lokasi Folder: **`backend/tests/Feature/`**
 
-### Skenario Pengujian yang Dibuat:
-1. `AuthenticationTest.php`: Menguji login valid, login invalid password, dan profile me.
-2. `MahasiswaCrudTest.php`: Menguji CRUD Mahasiswa oleh Admin dan filtering prodi.
-3. `PerwalianWorkflowTest.php`: Menguji pengajuan perwalian baru, proteksi edit status Disetujui, dan approval dosen wali.
-4. `PermissionTest.php`: Menguji bahwa Mahasiswa mendapat error 403 Forbidden saat membuka menu kelola user Admin.
+### Skenario Pengujian yang Tersedia:
+| File Test | Skenario yang Diuji |
+|:---|:---|
+| `AuthenticationTest.php` | Login valid, login invalid, profile me |
+| `MahasiswaCrudTest.php` | CRUD Mahasiswa oleh Admin, filtering prodi |
+| `MatakuliahTest.php` | Pengambilan daftar mata kuliah |
+| `PasswordResetTest.php` | Forgot password, verifikasi token, token expired setelah 5 menit |
+| `PermissionTest.php` | Mahasiswa mendapat 403 saat akses menu admin |
+| `PerwalianWorkflowTest.php` | Pengajuan perwalian, proteksi edit status Disetujui, approval dosen |
+| `ExampleTest.php` | Health check aplikasi |
 
 ### Menjalankan Pengujian:
 ```bash
+php artisan test
+```
+atau
+```bash
 vendor/bin/phpunit
 ```
-*Seluruh pengujian berjalan cepat menggunakan database in-memory SQLite yang dikonfigurasi pada file `phpunit.xml`.*
+*Seluruh pengujian berjalan menggunakan database in-memory SQLite yang dikonfigurasi pada file `phpunit.xml`.*
+
+### Contoh Hasil Test:
+```
+Tests:    10 passed (30 assertions)
+Duration: 1.68s
+Status:   100% PASSED
+```
 
 ---
 
-## 🧹 10. STANDAR FORMAT KODE & PENANGANAN ERROR TERPUSAT
+## 🧹 14. STANDAR FORMAT KODE & TRAIT API RESPONSE
 
 ### A. Format Otomatis dengan Laravel Pint
-Untuk memastikan kode selalu rapi sesuai standar PSR-12:
 ```bash
 vendor/bin/pint
 ```
@@ -413,7 +641,7 @@ trait ApiResponseTrait
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data' => $data,
+            'data'    => $data,
         ], $code);
     }
 
@@ -422,8 +650,36 @@ trait ApiResponseTrait
         return response()->json([
             'success' => false,
             'message' => $message,
-            'errors' => $errors,
+            'errors'  => $errors,
         ], $code);
     }
+}
+```
+
+### C. Contoh Respons JSON Sukses
+```json
+{
+  "success": true,
+  "message": "Data Mahasiswa berhasil diperbarui.",
+  "data": {
+    "id": 5,
+    "nim": "3200005",
+    "nama_lengkap": "Budi Santoso",
+    "prodi": "Teknik Informatika",
+    "angkatan": "2020",
+    "ipk_terakhir": "3.75",
+    "sks_lulus": 100
+  }
+}
+```
+
+### D. Contoh Respons JSON Error Validasi (422)
+```json
+{
+  "success": false,
+  "message": "NIM sudah terdaftar dalam sistem.",
+  "errors": {
+    "nim": ["NIM sudah terdaftar dalam sistem."]
+  }
 }
 ```

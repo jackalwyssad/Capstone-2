@@ -34,4 +34,9 @@ export const mahasiswaService = {
     const response = await api.post('/mahasiswa/import', payload);
     return response.data;
   },
+
+  resetPassword: async (id) => {
+    const response = await api.post(`/mahasiswa/${id}/reset-password`);
+    return response.data;
+  },
 };

@@ -26,4 +26,14 @@ class UpdateProfileRequest extends FormRequest
             'avatar' => ['nullable', 'string'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'Nama lengkap wajib diisi.',
+            'email.required' => 'Alamat email wajib diisi.',
+            'email.unique' => 'Alamat email sudah terdaftar dalam sistem.',
+            'email.email' => 'Format email tidak valid.',
+        ];
+    }
 }

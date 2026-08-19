@@ -15,7 +15,7 @@ class DosenRepository implements DosenRepositoryInterface
 {
     public function getAllPaginated(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
-        $query = Dosen::with(['user'])->withCount('mahasiswaBimbingan');
+        $query = Dosen::with(['user'])->withCount(['mahasiswaBimbingan', 'perwalian']);
 
         if (! empty($filters['search'])) {
             $search = $filters['search'];
@@ -34,15 +34,15 @@ class DosenRepository implements DosenRepositoryInterface
 
     public function getAllList(): Collection
     {
-        return Dosen::select('id', 'nama_lengkap', 'nidn', 'gelar', 'kuota_bimbingan')
-            ->withCount('mahasiswaBimbingan')
+        return Dosen::select('id', 'nama_lengkap', 'nidn', 'gelar', 'kuota_bimbingan', 'email', 'no_hp', 'pendidikan_terakhir', 'foto')
+            ->withCount(['mahasiswaBimbingan', 'perwalian'])
             ->orderBy('nama_lengkap', 'asc')
             ->get();
     }
 
     public function findById(int $id): ?Dosen
     {
-        return Dosen::with(['user', 'mahasiswaBimbingan.user'])->find($id);
+        return Dosen::with(['user', 'mahasiswaBimbingan.user', 'perwalian'])->withCount(['mahasiswaBimbingan', 'perwalian'])->find($id);
     }
 
     public function findByUserId(int $userId): ?Dosen

@@ -151,4 +151,22 @@ class MahasiswaController extends Controller
 
         return $this->successResponse(['imported_count' => $count], "Berhasil mengimpor {$count} data mahasiswa.");
     }
+
+    /**
+     * Reset Password Mahasiswa ke Default (Mahasiswa123) oleh Admin.
+     */
+    public function resetPassword(int $id): JsonResponse
+    {
+        $mahasiswa = $this->mahasiswaService->getMahasiswaById($id);
+        if (! $mahasiswa || ! $mahasiswa->user) {
+            return $this->errorResponse('Data Mahasiswa atau Akun Pengguna tidak ditemukan.', 404);
+        }
+
+        $defaultPassword = 'Mahasiswa123';
+        $mahasiswa->user->update(['password' => bcrypt($defaultPassword)]);
+
+        return $this->successResponse([
+            'default_password' => $defaultPassword,
+        ], "Password mahasiswa {$mahasiswa->nama_lengkap} berhasil direset ke: {$defaultPassword}");
+    }
 }

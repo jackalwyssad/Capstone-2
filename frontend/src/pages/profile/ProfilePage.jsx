@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { authService } from '../../services/authService';
 import { PageHeader } from '../../components/layout/PageHeader';
@@ -6,70 +6,425 @@ import { Card } from '../../components/common/Card';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { toast } from 'sonner';
-import { User, Mail, Phone, Shield } from 'lucide-react';
+import {
+  User,
+  Mail,
+  Phone,
+  Shield,
+  GraduationCap,
+  MapPin,
+  Calendar,
+  BookOpen,
+  Award,
+  Camera,
+  Upload,
+  Check,
+  X,
+  RefreshCw,
+} from 'lucide-react';
 
 /**
- * Halaman Profil Pengguna
- * Menampilkan rincian identitas user login dan form update informasi akun.
+ * Halaman Profil Pengguna STMIK Bandung
+ * Fitur:
+ * - Upload file foto profil langsung dari komputer lokal (disimpan di server storage lokal).
+ * - Preview foto realtime sebelum diunggah.
+ * - Informasi akun dan kartu "Profil Dosen Wali Anda" untuk Mahasiswa.
  */
 export const ProfilePage = () => {
-  const { user, setUser } = useAuthStore();
+  const { user, setUser, hasRole } = useAuthStore();
+  const fileInputRef = useRef(null);
+
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phone_number || '');
+  const [avatar, setAvatar] = useState(user?.avatar || user?.mahasiswa?.foto || user?.dosen?.foto || '');
+
+  // Sinkronisasi data saat user di-store terupdate
+  React.useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setEmail(user.email || '');
+      setPhone(user.phone_number || '');
+      setAvatar(user.avatar || user.mahasiswa?.foto || user.dosen?.foto || '');
+    }
+  }, [user]);
+
+  // State File Upload Lokal
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Handle pemilihan file foto lokal dari komputer
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validasi tipe file
+    if (!file.type.startsWith('image/')) {
+      toast.error('Harap pilih file gambar (JPG, PNG, WEBP, GIF).');
+      return;
+    }
+
+    // Validasi ukuran file (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Ukuran file foto maksimal adalah 5MB.');
+      return;
+    }
+
+    setSelectedFile(file);
+    const localUrl = URL.createObjectURL(file);
+    setPreviewUrl(localUrl);
+    toast.info(`Foto "${file.name}" siap diunggah. Klik "Simpan Foto" untuk menyimpan.`);
+  };
+
+  // Batalkan pemilihan file
+  const handleCancelFile = () => {
+    setSelectedFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Helper format URL avatar
+  const formatAvatarUrl = (avatarUrl, fallbackName = 'User') => {
+    if (!avatarUrl) {
+      return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(fallbackName)}`;
+    }
+    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://') || avatarUrl.startsWith('data:')) {
+      return avatarUrl;
+    }
+    return `http://127.0.0.1:8000/${avatarUrl.replace(/^\//, '')}`;
+  };
+
+  // Unggah foto ke server lokal
+  const handleUploadPhoto = async () => {
+    if (!selectedFile) return;
+    setIsUploadingPhoto(true);
+    try {
+      const res = await authService.uploadAvatar(selectedFile);
+      if (res.success) {
+        const updatedUser = res.data.user || res.data;
+        const newAvatarUrl = res.data.avatar_url || updatedUser?.avatar;
+        setUser(updatedUser);
+        setAvatar(newAvatarUrl);
+        setSelectedFile(null);
+        if (previewUrl) {
+          URL.revokeObjectURL(previewUrl);
+          setPreviewUrl(null);
+        }
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        toast.success('Foto profil berhasil diunggah dan tersimpan!');
+        return newAvatarUrl;
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal mengunggah foto profil.');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+    return null;
+  };
+
+  // Simpan perubahan informasi biodata teks & foto
   const handleUpdate = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const res = await authService.updateProfile({ name, email, phone_number: phone });
+      let finalAvatar = avatar;
+
+      // Jika ada file foto yang dipilih, unggah fotonya terlebih dahulu
+      if (selectedFile) {
+        const uploadedUrl = await handleUploadPhoto();
+        if (uploadedUrl) {
+          finalAvatar = uploadedUrl;
+        }
+      }
+
+      const res = await authService.updateProfile({
+        name,
+        email,
+        phone_number: phone,
+        avatar: finalAvatar || user?.avatar || undefined,
+      });
+
       if (res.success) {
         setUser(res.data);
-        toast.success('Profil Anda berhasil diperbarui!');
+        toast.success('Informasi profil berhasil diperbarui!');
       }
     } catch (err) {
-      toast.error('Gagal memperbarui profil.');
+      toast.error(err.response?.data?.message || 'Gagal memperbarui profil.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  // URL display foto avatar
+  const currentAvatarUrl =
+    previewUrl ||
+    formatAvatarUrl(avatar || user?.avatar || user?.mahasiswa?.foto || user?.dosen?.foto, user?.name);
+
   return (
     <div>
-      <PageHeader title="Profil Saya" description="Kelola informasi biodata akun Anda" />
+      <PageHeader
+        title="Profil Saya"
+        description="Kelola informasi biodata akademik, ganti foto profil lokal, dan lihat data pembimbing Anda"
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* User Card Badge */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        {/* User Card Badge & Photo Upload */}
         <Card hover={false} className="flex flex-col items-center text-center p-6">
-          <div className="w-20 h-20 rounded-full bg-primary-600 text-white font-extrabold text-2xl flex items-center justify-center shadow-lg shadow-primary-600/30 mb-4">
-            {user?.name ? user.name.charAt(0) : 'U'}
+          <div className="relative group mb-4">
+            <img
+              src={currentAvatarUrl}
+              alt={user?.name}
+              className="w-28 h-28 rounded-3xl object-cover border-4 border-primary-500 shadow-xl bg-slate-100 dark:bg-slate-800 transition-transform group-hover:scale-105"
+            />
+            
+            {/* Tombol Kamera Overlay */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute inset-0 bg-black/40 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white cursor-pointer"
+              title="Ganti Foto Profil dari Komputer"
+            >
+              <Camera className="w-6 h-6 mb-1" />
+              <span className="text-[10px] font-bold">Ganti Foto</span>
+            </button>
+
+            {/* Hidden Input File */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/png, image/jpeg, image/jpg, image/webp"
+              className="hidden"
+            />
           </div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{user?.name}</h3>
-          <p className="text-xs text-slate-400">{user?.email}</p>
-          <span className="mt-3 px-3 py-1 rounded-full text-xs font-extrabold bg-primary-100 dark:bg-primary-950 text-primary-600 dark:text-primary-400 border border-primary-300 dark:border-primary-800">
-            Role: {user?.roles?.[0] || 'User'}
-          </span>
+
+          {/* Action Buttons saat foto dipilih */}
+          {selectedFile ? (
+            <div className="flex flex-col items-center gap-2 mb-3 w-full animate-fadeIn">
+              <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 truncate max-w-[200px]">
+                {selectedFile.name}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  icon={Upload}
+                  onClick={handleUploadPhoto}
+                  isLoading={isUploadingPhoto}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-xs py-1.5"
+                >
+                  Simpan Foto
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  icon={X}
+                  onClick={handleCancelFile}
+                  disabled={isUploadingPhoto}
+                  className="text-rose-600 text-xs py-1.5"
+                >
+                  Batal
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              icon={Upload}
+              onClick={() => fileInputRef.current?.click()}
+              className="text-xs mb-3"
+            >
+              Pilih Foto dari Komputer
+            </Button>
+          )}
+
+          <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">{user?.name}</h3>
+          <p className="text-xs text-slate-400 font-medium">{user?.email}</p>
+          {user?.mahasiswa?.nim && (
+            <p className="text-xs font-mono font-bold text-primary-600 dark:text-primary-400 mt-1">
+              NIM: {user.mahasiswa.nim}
+            </p>
+          )}
+          {user?.dosen?.nidn && (
+            <p className="text-xs font-mono font-bold text-primary-600 dark:text-primary-400 mt-1">
+              NIDN: {user.dosen.nidn}
+            </p>
+          )}
+
+          <div className="mt-3 flex flex-wrap gap-2 justify-center">
+            <span className="px-3 py-1 rounded-full text-[11px] font-black bg-primary-100 dark:bg-primary-950 text-primary-600 dark:text-primary-300 border border-primary-300 dark:border-primary-800">
+              Role: {user?.roles?.[0] || 'User'}
+            </span>
+            {user?.mahasiswa?.prodi && (
+              <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200">
+                {user.mahasiswa.prodi}
+              </span>
+            )}
+          </div>
         </Card>
 
         {/* Update Profile Form */}
         <Card hover={false} className="md:col-span-2">
           <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-4 font-sans">
-            Informasi Akun
+            Informasi Akun & Identitas
           </h3>
           <form onSubmit={handleUpdate} className="space-y-4">
-            <Input label="Nama Lengkap" icon={User} value={name} onChange={(e) => setName(e.target.value)} required />
-            <Input label="Email Official" type="email" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <Input label="Nomor Telepon / WhatsApp" icon={Phone} value={phone} onChange={(e) => setPhone(e.target.value)} />
+            {/* Field NIM / NIDN Terkunci */}
+            {hasRole('Mahasiswa') && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80">
+                <Input
+                  label="NIM (Nomor Induk Mahasiswa - Terkunci)"
+                  value={user?.mahasiswa?.nim || '-'}
+                  readOnly
+                  className="bg-slate-100 dark:bg-slate-800 font-mono font-bold text-slate-600 dark:text-slate-300 cursor-not-allowed"
+                />
+                <Input
+                  label="Program Studi (Terkunci)"
+                  value={user?.mahasiswa?.prodi || '-'}
+                  readOnly
+                  className="bg-slate-100 dark:bg-slate-800 font-bold text-slate-600 dark:text-slate-300 cursor-not-allowed"
+                />
+              </div>
+            )}
+
+            {hasRole('Dosen') && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80">
+                <Input
+                  label="NIDN (Nomor Induk Dosen Nasional - Terkunci)"
+                  value={user?.dosen?.nidn || '-'}
+                  readOnly
+                  className="bg-slate-100 dark:bg-slate-800 font-mono font-bold text-slate-600 dark:text-slate-300 cursor-not-allowed"
+                />
+                <Input
+                  label="Gelar Akademik"
+                  value={user?.dosen?.gelar || '-'}
+                  readOnly
+                  className="bg-slate-100 dark:bg-slate-800 font-bold text-slate-600 dark:text-slate-300 cursor-not-allowed"
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input label="Nama Lengkap" icon={User} value={name} onChange={(e) => setName(e.target.value)} required />
+              <Input label="Email Official" type="email" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input label="Nomor Telepon / WhatsApp" icon={Phone} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08xxxxxxxxxx" />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold tracking-wide text-slate-700 dark:text-slate-300">
+                  Unggah File Foto Profil
+                </label>
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center justify-between p-2.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-primary-500 cursor-pointer bg-slate-50 dark:bg-slate-900/60 transition-colors text-xs text-slate-600 dark:text-slate-400"
+                >
+                  <span className="truncate">
+                    {selectedFile ? `File: ${selectedFile.name}` : 'Klik untuk memilih foto dari perangkat Anda (Maks. 5MB)'}
+                  </span>
+                  <Upload className="w-4 h-4 text-primary-500 flex-shrink-0 ml-2" />
+                </div>
+              </div>
+            </div>
 
             <div className="flex justify-end pt-2">
-              <Button type="submit" isLoading={isLoading}>
+              <Button type="submit" isLoading={isLoading || isUploadingPhoto}>
                 Simpan Perubahan
               </Button>
             </div>
           </form>
         </Card>
       </div>
+
+      {/* Profil Dosen Wali Anda (Untuk Mahasiswa) */}
+      {hasRole('Mahasiswa') && user?.mahasiswa?.dosen_wali && (
+        <Card hover={false} className="border-t-4 border-t-primary-600 mb-6">
+          <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-4 font-sans flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <GraduationCap className="w-5 h-5 text-primary-600" />
+              Profil Dosen Wali Pembimbing Akademik Anda
+            </span>
+            <span className="text-[11px] font-extrabold px-3 py-1 rounded-full bg-primary-100 dark:bg-primary-950 text-primary-600 dark:text-primary-300">
+              Dosen Pembimbing
+            </span>
+          </h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-center">
+            <div className="flex flex-col items-center sm:items-start gap-2 sm:border-r sm:border-slate-200 dark:sm:border-slate-800 pr-4">
+              <img
+                src={
+                  user.mahasiswa.dosen_wali.foto ||
+                  `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.mahasiswa.dosen_wali.nama_lengkap)}`
+                }
+                alt={user.mahasiswa.dosen_wali.nama_lengkap}
+                className="w-20 h-20 rounded-2xl object-cover border-2 border-primary-500 shadow-md"
+              />
+              <div className="text-center sm:text-left">
+                <p className="font-extrabold text-sm text-slate-900 dark:text-slate-100">
+                  {user.mahasiswa.dosen_wali.nama_lengkap}
+                </p>
+                <p className="text-primary-600 dark:text-primary-400 font-bold text-xs">
+                  NIDN: {user.mahasiswa.dosen_wali.nidn}
+                </p>
+              </div>
+            </div>
+
+            <div className="sm:col-span-2 space-y-2 text-xs text-slate-600 dark:text-slate-400">
+              <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-800">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5" /> Pendidikan Terakhir
+                </span>
+                <span className="font-bold text-slate-900 dark:text-slate-100">
+                  {user.mahasiswa.dosen_wali.pendidikan_terakhir || '-'}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-800">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5" /> Email Official
+                </span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  {user.mahasiswa.dosen_wali.email}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-800">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5" /> WhatsApp
+                </span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  {user.mahasiswa.dosen_wali.no_hp || '-'}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-800">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5" /> Tempat, Tgl Lahir
+                </span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  {user.mahasiswa.dosen_wali.tempat_lahir || '-'}{user.mahasiswa.dosen_wali.tanggal_lahir ? `, ${user.mahasiswa.dosen_wali.tanggal_lahir.slice(0, 10)}` : ''}
+                </span>
+              </div>
+              {user.mahasiswa.dosen_wali.alamat && (
+                <div className="py-1">
+                  <span className="text-slate-400 flex items-center gap-1.5 mb-0.5">
+                    <MapPin className="w-3.5 h-3.5" /> Alamat Kantor / Domisili
+                  </span>
+                  <span className="font-medium text-slate-800 dark:text-slate-200">
+                    {user.mahasiswa.dosen_wali.alamat}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
     </div>
   );
 };

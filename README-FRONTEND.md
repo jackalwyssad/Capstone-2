@@ -20,13 +20,15 @@ Dokumen ini merupakan **Buku Panduan Teknis & Tutorial Komprehensif Seluruh Fitu
 10. [Tutorial Visualisasi Grafik Analitik (Recharts Bar Chart & Pie Chart)](#10-tutorial-visualisasi-grafik-analitik-recharts-bar-chart--pie-chart)
 11. [Tutorial Kelola Data Mahasiswa: CRUD, Search, Filter Prodi & Import Data](#11-tutorial-kelola-data-mahasiswa-crud-search-filter-prodi--import-data)
 12. [Tutorial Kelola Data Dosen Wali & Fitur Bulk Assign Dosen Wali](#12-tutorial-kelola-data-dosen-wali--fitur-bulk-assign-dosen-wali)
-13. [Tutorial Inti Perwalian: Builder KRS Matakuliah Dinamis & Approval Dosen](#13-tutorial-inti-perwalian-builder-krs-matakuliah-dinamis--approval-dosen)
-14. [Tutorial Riwayat Bimbingan & Linimasa Audit Trail Log](#14-tutorial-riwayat-bimbingan--linimasa-audit-trail-log)
-15. [Tutorial Profil Pengguna & Pembaruan Biodata Akun](#15-tutorial-profil-pengguna--pembaruan-biodata-akun)
-16. [Tutorial Pengaturan & Manajemen Pengguna/Role Spatie (Admin Only)](#16-tutorial-pengaturan--manajemen-penggunarole-spatie-admin-only)
-17. [Tutorial Ekspor Seluruh Data ke Dokumen PDF Multi-Page & File Excel (.xlsx)](#17-tutorial-ekspor-seluruh-data-ke-dokumen-pdf-multi-page--file-excel-xlsx)
-18. [Tutorial Animasi UI Framer Motion, Toast Sonner & SweetAlert2](#18-tutorial-animasi-ui-framer-motion-toast-sonner--sweetalert2)
-19. [Tutorial Penanganan Halaman Error (403, 404, 500)](#19-tutorial-penanganan-halaman-error-403-404-500)
+13. [Tutorial Modul Mata Kuliah: CRUD, Kode Auto-Sequential & Dropdown Ruangan](#13-tutorial-modul-mata-kuliah-crud-kode-auto-sequential--dropdown-ruangan)
+14. [Tutorial Inti Perwalian: Builder KRS Matakuliah Dinamis & Approval Dosen](#14-tutorial-inti-perwalian-builder-krs-matakuliah-dinamis--approval-dosen)
+15. [Tutorial Riwayat Bimbingan & Linimasa Audit Trail Log](#15-tutorial-riwayat-bimbingan--linimasa-audit-trail-log)
+16. [Tutorial Profil Pengguna, Foto Upload & Kartu Dosen Wali](#16-tutorial-profil-pengguna-foto-upload--kartu-dosen-wali)
+17. [Tutorial Pengaturan & Manajemen Pengguna/Role Spatie (Admin Only)](#17-tutorial-pengaturan--manajemen-penggunarole-spatie-admin-only)
+18. [Tutorial Ekspor Seluruh Data ke PDF Multi-Page & Excel (.xlsx)](#18-tutorial-ekspor-seluruh-data-ke-pdf-multi-page--excel-xlsx)
+19. [Tutorial Animasi UI Framer Motion, Toast Sonner & SweetAlert2](#19-tutorial-animasi-ui-framer-motion-toast-sonner--sweetalert2)
+20. [Tutorial Penanganan Halaman Error (403, 404, 500)](#20-tutorial-penanganan-halaman-error-403-404-500)
+21. [Tutorial Notifikasi Bahasa Indonesia Terpadu](#21-tutorial-notifikasi-bahasa-indonesia-terpadu)
 
 ---
 
@@ -35,11 +37,11 @@ Dokumen ini merupakan **Buku Panduan Teknis & Tutorial Komprehensif Seluruh Fitu
 ```
 frontend/
 ├── public/
-│   └── logo-stmik.png              # Logo Resmi STMIK Bandung 1993 & Favicon
+│   └── logo-stmik.png              # Logo Resmi STMIK Bandung & Favicon
 ├── src/
 │   ├── assets/                     # Asset Gambar & Logo
 │   ├── components/
-│   │   ├── common/                 # Reusable Atoms: Button, Input, Select, Modal, Badge, Card, Skeleton, EmptyState
+│   │   ├── common/                 # Reusable Atoms: Button, Input, Select, Modal, Badge, Card, Skeleton, EmptyState, ErrorBoundary
 │   │   ├── dashboard/              # Komponen Dashboard: StatCard, ActivityTimeline, ChartCards (Recharts)
 │   │   └── layout/                 # Layout Shell: Sidebar (Role-aware), Navbar, Footer, PageHeader
 │   ├── layouts/
@@ -47,29 +49,31 @@ frontend/
 │   │   └── DashboardLayout.jsx     # Template Wrapper Dashboard (Sidebar + Header + Body)
 │   ├── pages/
 │   │   ├── auth/                   # Login.jsx, RegisterAdmin.jsx, ForgotPassword.jsx, ResetPassword.jsx
-│   │   ├── dashboard/              # DashboardPage.jsx
+│   │   ├── dashboard/              # DashboardPage.jsx (multi-role adaptive)
 │   │   ├── dosen/                  # DosenListPage.jsx
 │   │   ├── mahasiswa/              # MahasiswaListPage.jsx
+│   │   ├── matakuliah/             # MatakuliahListPage.jsx (BARU - CRUD, Auto Code, Room Dropdown)
 │   │   ├── perwalian/              # PerwalianListPage.jsx
-│   │   ├── profile/                # ProfilePage.jsx
+│   │   ├── profile/                # ProfilePage.jsx (Foto Upload, Kartu Dosen Wali)
 │   │   ├── riwayat/                # RiwayatPage.jsx
-│   │   ├── settings/               # SettingsPage.jsx, UserManagementPage.jsx
+│   │   ├── settings/               # SettingsPage.jsx, UserManagementPage.jsx (Dynamic NIM/NIDN)
 │   │   └── errors/                 # Error403.jsx, Error404.jsx, Error500.jsx
 │   ├── routes/
-│   │   ├── AppRoutes.jsx           # Master Routing
-│   │   ├── ProtectedRoute.jsx      # Sanctum Guard
-│   │   └── RoleRoute.jsx           # Spatie Role Guard
+│   │   ├── AppRoutes.jsx           # Master Routing (termasuk /matakuliah)
+│   │   ├── ProtectedRoute.jsx      # Sanctum Token Guard
+│   │   └── RoleRoute.jsx           # Spatie Role Guard → 403
 │   ├── services/
 │   │   ├── api.js                  # Axios Client Instance & Interceptors
-│   │   ├── authService.js          # API Login, Register, Profile, Reset Password
+│   │   ├── authService.js          # API Login, Register, Profile, Reset Password, Avatar Upload
 │   │   ├── dashboardService.js     # API Metrik Analitik Dashboard
 │   │   ├── dosenService.js         # API CRUD Dosen & Assign Wali
 │   │   ├── mahasiswaService.js     # API CRUD Mahasiswa & Import
-│   │   ├── perwalianService.js     # API Perwalian, Dynamic KRS & Approval
+│   │   ├── matakuliahService.js    # API CRUD Mata Kuliah & Last Code Query (BARU)
+│   │   ├── perwalianService.js     # API Perwalian, Dynamic KRS, Approval & Scoped Export
 │   │   └── userService.js          # API Kelola User & Spatie Roles
 │   ├── store/
-│   │   ├── authStore.js            # Zustand Auth Store (User, Token, Role)
-│   │   └── themeStore.js           # Zustand Dark Mode Store
+│   │   ├── authStore.js            # Zustand Auth Store (User, Token, Role, hasRole)
+│   │   └── themeStore.js           # Zustand Dark Mode Store (localStorage persisted)
 │   └── utils/
 │       ├── exportHelpers.js        # jsPDF AutoTable & SheetJS XLSX Generator
 │       └── formatters.js           # Format Tanggal Indonesia & Status Badges
@@ -95,6 +99,7 @@ frontend/
    ```bash
    npm run build
    ```
+   Output build tersimpan di folder `dist/`.
 
 ---
 
@@ -124,7 +129,6 @@ Tersimpan di `public/logo-stmik.png` dan ditampilkan di:
 - **Favicon Tab Browser** (`index.html`)
 
 ### C. Dark Mode Persisten (`src/store/themeStore.js`)
-Menggunakan Zustand untuk menyimpan preferensi tema di `localStorage` dan secara dinamis mengubah class `dark` pada root dokumen HTML:
 ```javascript
 export const useThemeStore = create((set, get) => ({
   isDarkMode: localStorage.getItem('theme') === 'dark',
@@ -142,23 +146,29 @@ export const useThemeStore = create((set, get) => ({
 
 ## 🔐 4. TUTORIAL AUTENTIKASI: LOGIN, REGISTER ADMIN, LUPA & RESET PASSWORD
 
-Lokasi Folder: **`src/pages/auth/`**  
+Lokasi Folder: **`src/pages/auth/`**
 Service: **`src/services/authService.js`**
 
 ### A. Fitur Login (`Login.jsx`)
 - Menerima `email` dan `password`.
+- Validasi client-side menggunakan **Zod Schema**.
 - Saat submit sukses, token Bearer dan objek User disimpan ke Zustand `authStore` dan `localStorage`.
-- Menampilkan pesan notifikasi toast sukses dari Sonner dan me-redirect otomatis ke `/dashboard`.
+- Toast sukses: *"Selamat datang kembali, [Nama User]!"*
+- Toast error (Bahasa Indonesia): *"Kredensial email atau password yang Anda masukkan salah."*
+- Mengarahkan otomatis ke `/dashboard`.
 
 ### B. Fitur Registrasi Administrator (`RegisterAdmin.jsx`)
-- Digunakan untuk mendaftarkan akun Administrator baru.
-- Memvalidasi input `name`, `email`, `password`, dan `password_confirmation`.
+- Mendaftarkan akun Administrator baru.
+- Memvalidasi `name`, `email`, `password`, dan `password_confirmation`.
 
 ### C. Fitur Lupa Password (`ForgotPassword.jsx`)
-- Memvalidasi apakah email pengguna terdaftar di sistem sebelum melanjutkan ke tahap reset password.
+- Mengirim email reset password ke alamat yang terdaftar.
+- Menampilkan pesan informatif bahwa tautan hanya berlaku **5 menit**.
 
-### D. Fitur Reset Password Baru (`ResetPassword.jsx`)
-- Mengubah kata sandi pengguna secara langsung di backend dan memberikan konfirmasi berhasil untuk login kembali.
+### D. Fitur Reset Password (`ResetPassword.jsx`)
+- Memverifikasi keabsahan token sebelum menampilkan form reset.
+- Jika token expired (> 5 menit), menampilkan pesan error dan meminta pengiriman ulang.
+- Toast sukses: *"Password berhasil diperbarui! Silakan login dengan kata sandi baru."*
 
 ---
 
@@ -167,7 +177,6 @@ Service: **`src/services/authService.js`**
 Lokasi Folder: **`src/routes/`**
 
 ### A. Route Guard Autentikasi (`ProtectedRoute.jsx`)
-Mengecek apakah state `isAuthenticated` bernilai `true`. Jika `false`, user otomatis di-redirect ke halaman `/login`:
 ```jsx
 export const ProtectedRoute = () => {
   const { isAuthenticated } = useAuthStore();
@@ -176,7 +185,7 @@ export const ProtectedRoute = () => {
 ```
 
 ### B. Role Permission Guard (`RoleRoute.jsx`)
-Mencegah pengguna membuka rute yang bukan haknya (misalnya Mahasiswa membuka menu Kelola User Admin). Jika role tidak diizinkan, otomatis dialihkan ke halaman **403 Forbidden**:
+Mencegah pengguna membuka rute yang bukan haknya. Jika role tidak diizinkan, otomatis dialihkan ke **halaman 403 Forbidden**:
 ```jsx
 export const RoleRoute = ({ allowedRoles = [] }) => {
   const { user } = useAuthStore();
@@ -189,8 +198,24 @@ export const RoleRoute = ({ allowedRoles = [] }) => {
 };
 ```
 
-### C. Pencegahan Active Link Bertabrakan (`Sidebar.jsx`)
-Menambahkan properti `end={item.path === '/settings' || item.path === '/dashboard'}` pada komponen `<NavLink>` agar menu *Pengaturan* (`/settings`) tidak ikut berubah menjadi biru saat user membuka submenu *Kelola User & Role* (`/settings/users`).
+### C. Penggunaan di AppRoutes
+```jsx
+// Hanya Admin yang bisa akses /matakuliah, /mahasiswa, /dosen
+<Route element={<RoleRoute allowedRoles={['Admin']} />}>
+  <Route path="/matakuliah" element={<MatakuliahListPage />} />
+  <Route path="/mahasiswa" element={<MahasiswaListPage />} />
+  <Route path="/dosen" element={<DosenListPage />} />
+  <Route path="/settings/users" element={<UserManagementPage />} />
+</Route>
+
+// Admin & Dosen bisa akses /perwalian
+<Route element={<RoleRoute allowedRoles={['Admin', 'Dosen', 'Mahasiswa']} />}>
+  <Route path="/perwalian" element={<PerwalianListPage />} />
+</Route>
+```
+
+### D. Pencegahan Active Link Bertabrakan (`Sidebar.jsx`)
+Properti `end={item.path === '/settings' || item.path === '/dashboard'}` pada `<NavLink>` agar menu `/settings` tidak ikut aktif saat membuka `/settings/users`.
 
 ---
 
@@ -198,7 +223,6 @@ Menambahkan properti `end={item.path === '/settings' || item.path === '/dashboar
 
 Lokasi File: **`src/store/authStore.js`**
 
-Menyediakan fungsi global untuk menyimpan sesi autentikasi, mengupdate profil, logout, dan memverifikasi role:
 ```javascript
 import { create } from 'zustand';
 
@@ -238,25 +262,18 @@ export const useAuthStore = create((set, get) => ({
 Lokasi File: **`src/services/api.js`**
 
 ### Alur Kerja Interceptor:
-1. **Request Interceptor**: Sebelum request dikirim ke backend, token Bearer diambil dari `localStorage` dan dimasukkan ke header `Authorization: Bearer <token>`.
-2. **Response Interceptor**: Jika backend mengembalikan status HTTP `401 Unauthorized` (misalnya token sudah expired atau dihapus), sesi lokal otomatis dibersihkan dan halaman di-redirect ke `/login`.
+1. **Request Interceptor**: Token Bearer diambil dari `localStorage` dan dimasukkan ke header `Authorization`.
+2. **Response Interceptor**: Jika backend mengembalikan HTTP `401`, sesi lokal dibersihkan dan halaman di-redirect ke `/login`.
 
 ```javascript
-import axios from 'axios';
-
 export const api = axios.create({
   baseURL: 'http://127.0.0.1:8000/api/v1',
-  headers: {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
 });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
@@ -279,21 +296,31 @@ api.interceptors.response.use(
 
 ### Mengapa Menggunakan React Query?
 - **Otomatis Caching**: Data tidak perlu diambil ulang jika berpindah-pindah tab.
-- **Mutasi & Auto Invalidation**: Setelah menyimpan atau menghapus data, tabel otomatis me-refresh data terbaru tanpa perlu me-reload halaman browser.
+- **Mutasi & Auto Invalidation**: Setelah menyimpan atau menghapus data, tabel otomatis me-refresh.
 
 ```javascript
-// Contoh Query (Mengambil Data)
+// Query (Mengambil Data)
 const { data, isLoading } = useQuery({
   queryKey: ['mahasiswa', page, search, prodiFilter],
   queryFn: () => mahasiswaService.getMahasiswa({ page, search, prodi: prodiFilter }),
 });
 
-// Contoh Mutasi (Hapus Data)
-const deleteMutation = useMutation({
-  mutationFn: (id) => mahasiswaService.deleteMahasiswa(id),
+// Mutasi (Simpan Data)
+const saveMutation = useMutation({
+  mutationFn: (formData) => selectedMhs
+    ? mahasiswaService.updateMahasiswa(selectedMhs.id, formData)
+    : mahasiswaService.createMahasiswa(formData),
   onSuccess: () => {
-    toast.success('Data berhasil dihapus');
-    queryClient.invalidateQueries(['mahasiswa']); // Refresh query otomatis
+    toast.success(selectedMhs ? 'Data Mahasiswa berhasil diperbarui.' : 'Data Mahasiswa berhasil ditambahkan.');
+    queryClient.invalidateQueries(['mahasiswa']); // Refresh otomatis
+    setIsFormModalOpen(false);
+  },
+  onError: (err) => {
+    const errorMsg =
+      err.response?.data?.message ||
+      Object.values(err.response?.data?.errors || {})?.[0]?.[0] ||
+      'Gagal menyimpan data mahasiswa.';
+    toast.error(errorMsg);
   },
 });
 ```
@@ -302,19 +329,19 @@ const deleteMutation = useMutation({
 
 ## 📊 9. TUTORIAL DASHBOARD MULTI-ROLE (ADMIN, DOSEN WALI, MAHASISWA)
 
-Lokasi File: **`src/pages/dashboard/DashboardPage.jsx`**  
+Lokasi File: **`src/pages/dashboard/DashboardPage.jsx`**
 Service: **`src/services/dashboardService.js`**
 
 Tampilan dashboard bersifat adaptif sesuai role pengguna yang login:
 1. **Tampilan Administrator**:
-   - Kartu Metrik: Total Mahasiswa, Total Dosen Wali, Total Pengajuan Perwalian, dan Pengajuan Pending.
+   - Kartu Metrik: Total Mahasiswa, Total Dosen Wali, Total Pengajuan Perwalian, Pending.
    - Grafik Bar Chart Statistik Per Semester & Donut Chart Rasio Status Persetujuan.
    - Linimasa Aktivitas Terkini (*Recent Activity Timeline*).
 2. **Tampilan Dosen Wali**:
    - Kartu Kuota Bimbingan & Total Mahasiswa Bimbingan Aktif.
-   - Antrian Perwalian yang membutuhkan review persetujuan (*Pending Action*).
+   - Antrian Perwalian yang membutuhkan review persetujuan.
 3. **Tampilan Mahasiswa**:
-   - Kartu Profil Dosen Wali Pembimbing Akademik.
+   - Kartu Profil Dosen Wali Pembimbing Akademik (Nama, NIDN, Email, WhatsApp).
    - Informasi IPK Terakhir & Total SKS Lulus.
    - Status Pengajuan Perwalian Semester Aktif.
 
@@ -325,7 +352,6 @@ Tampilan dashboard bersifat adaptif sesuai role pengguna yang login:
 Lokasi File: **`src/components/dashboard/ChartCards.jsx`**
 
 ### A. Bar Chart (Pengajuan Per Semester)
-Menggunakan komponen `ResponsiveContainer`, `BarChart`, `CartesianGrid`, `XAxis`, `YAxis`, `Tooltip`, dan `Bar`:
 ```jsx
 <ResponsiveContainer width="100%" height={260}>
   <BarChart data={semesterData}>
@@ -339,7 +365,6 @@ Menggunakan komponen `ResponsiveContainer`, `BarChart`, `CartesianGrid`, `XAxis`
 ```
 
 ### B. Pie / Donut Chart (Distribusi Status)
-Menggunakan `PieChart`, `Pie`, `Cell`, `Tooltip`, dan `Legend` dengan pemetaan warna status:
 ```jsx
 const STATUS_COLORS = {
   Disetujui: '#10b981', // Hijau
@@ -364,59 +389,170 @@ const STATUS_COLORS = {
 
 ## 👥 11. TUTORIAL KELOLA DATA MAHASISWA: CRUD, SEARCH, FILTER & IMPORT
 
-Lokasi File: **`src/pages/mahasiswa/MahasiswaListPage.jsx`**  
+Lokasi File: **`src/pages/mahasiswa/MahasiswaListPage.jsx`**
 Service: **`src/services/mahasiswaService.js`**
 
 ### Fitur Lengkap:
-1. **Pencarian Cerdas Case-Insensitive**: Input search mengirim query string ke backend (diproses dengan operator PostgreSQL `ILIKE`).
-2. **Filter Program Studi**: Dropdown memilih `Teknik Informatika` atau `Sistem Informasi`.
-3. **Pagination Tabel**: Kontrol tombol *Sebelumnya* dan *Selanjutnya* berbasis metadata backend.
-4. **Modal Form Tambah / Edit Mahasiswa**: Form validasi data NIM, Nama, Prodi, Angkatan, IPK, SKS, dan pilihan Dosen Wali.
-5. **Modal Impor Massal JSON/Excel**: Memungkinkan administrator menempelkan data array JSON untuk disimpan ke database secara massal.
-6. **Hapus Data Terproteksi**: Modal konfirmasi SweetAlert2 sebelum menghapus data mahasiswa dan user terkait.
+1. **Pencarian Case-Insensitive**: Query string dikirim ke backend (diproses dengan `ILIKE` PostgreSQL).
+2. **Filter Program Studi**: Dropdown `Teknik Informatika` atau `Sistem Informasi`.
+3. **Pagination Tabel**: Kontrol *Sebelumnya* dan *Selanjutnya* berbasis metadata backend.
+4. **Modal Form Tambah / Edit Mahasiswa**: Validasi NIM, Nama, Prodi, Angkatan, IPK, SKS, pilihan Dosen Wali.
+5. **Modal Impor Massal JSON**: Tempel data array JSON untuk disimpan ke database secara massal.
+6. **Reset Password Cepat**: Reset password mahasiswa ke default `Mahasiswa123` dari tabel.
+7. **Hapus Data Terproteksi**: Modal konfirmasi SweetAlert2 sebelum menghapus data mahasiswa dan user terkait.
+8. **Export Excel & PDF**: Download seluruh data mahasiswa ke file Excel atau PDF multi-halaman.
 
 ---
 
 ## 👨‍🏫 12. TUTORIAL KELOLA DATA DOSEN WALI & FITUR BULK ASSIGN WALI
 
-Lokasi File: **`src/pages/dosen/DosenListPage.jsx`**  
+Lokasi File: **`src/pages/dosen/DosenListPage.jsx`**
 Service: **`src/services/dosenService.js`**
 
 ### Fitur Lengkap:
-1. **CRUD Dosen Wali**: Pengelolaan NIDN, Nama Lengkap beserta Gelar, Email Official, Nomor WhatsApp, dan Kuota Maksimal Bimbingan.
+1. **CRUD Dosen Wali**: Kelola NIDN, Nama Lengkap, Gelar, Email, WhatsApp, dan Kuota Bimbingan.
 2. **Fitur Bulk Assign Dosen Wali**:
-   - Administrator mengklik tombol **"Assign Wali"** pada salah satu Dosen Wali.
-   - Modal menampilkan daftar seluruh mahasiswa yang belum dibimbing atau ingin dialihkan.
-   - Admin memilih multi-checkbox mahasiswa lalu menyimpan penetapan sekaligus via endpoint `POST /api/v1/dosen/assign-wali`.
+   - Klik tombol **"Assign Wali"** pada baris dosen.
+   - Modal menampilkan daftar mahasiswa yang belum dibimbing.
+   - Admin memilih multi-checkbox lalu menyimpan penetapan sekaligus.
+   - Toast sukses: *"Berhasil menugaskan [X] mahasiswa ke Dosen Wali [Nama Dosen]."*
+3. **Reset Password Cepat**: Reset password dosen ke default `Dosen123`.
+4. **Export Excel & PDF**: Download data seluruh dosen ke file Excel atau PDF.
 
 ---
 
-## 📝 13. TUTORIAL INTI PERWALIAN: BUILDER KRS MATAKULIAH DINAMIS & APPROVAL
+## 📚 13. TUTORIAL MODUL MATA KULIAH: CRUD, KODE AUTO-SEQUENTIAL & DROPDOWN RUANGAN
 
-Lokasi File: **`src/pages/perwalian/PerwalianListPage.jsx`**  
+Lokasi File: **`src/pages/matakuliah/MatakuliahListPage.jsx`**
+Service: **`src/services/matakuliahService.js`**
+
+> **MODUL BARU**: Halaman ini hanya dapat diakses oleh pengguna dengan role **Administrator**. Mahasiswa dan Dosen yang mencoba mengakses URL `/matakuliah` secara langsung akan diarahkan ke halaman **403 Forbidden**.
+
+### A. Kode Mata Kuliah Auto-Sequential (Dropdown Cerdas)
+Sistem secara otomatis mendeteksi kode terakhir berdasarkan kombinasi **Prodi** dan **Semester** yang dipilih, lalu menyarankan kode berikutnya:
+
+```javascript
+// Contoh logika di MatakuliahListPage.jsx
+useEffect(() => {
+  if (!formData.prodi || !formData.semester) return;
+
+  const prefix = {
+    'Teknik Informatika': 'IF',
+    'Sistem Informasi': 'SI',
+    'Umum (MKU)': 'MKU',
+  }[formData.prodi] || 'MK';
+
+  matakuliahService.getLastCode(formData.prodi, formData.semester)
+    .then((lastCode) => {
+      if (lastCode) {
+        const lastNum = parseInt(lastCode.replace(/\D/g, '')) || 0;
+        const nextNum = String(lastNum + 1).padStart(3, '0');
+        setSuggestedCode(`${prefix}-${nextNum}`); // Contoh: "IF-304"
+      } else {
+        setSuggestedCode(`${prefix}-${formData.semester}01`); // Contoh: "IF-301"
+      }
+    });
+}, [formData.prodi, formData.semester]);
+```
+
+**Tampilan Dropdown Kode:**
+```
+IF-304 ★ (Otomatis Berikutnya)
+SI-304 ★ (Otomatis Berikutnya)
+MKU-101 ★ (Otomatis Berikutnya)
+--- Kustom ---
+Ketik Kode Manual...
+```
+
+### B. Dropdown Ruangan Standar STMIK Bandung
+Menggantikan input teks bebas dengan pilihan ruangan yang sudah standar:
+```javascript
+const RUANGAN_OPTIONS = [
+  'Lab IF-1',
+  'Lab IF-2',
+  'Lab Multimedia',
+  'Lab Jaringan',
+  'Ruang 101',
+  'Ruang 102',
+  'Ruang 201',
+  'Ruang 202',
+  'Ruang 301',
+  'Aula',
+  'Ruang Seminar',
+];
+```
+
+### C. Autocomplete Dosen Pengampu (`<datalist>`)
+Field Dosen Pengampu menggunakan `<datalist>` HTML untuk memberikan saran nama dosen dari database master tanpa memaksakan pilihan (tetap bisa ketik manual untuk dosen baru):
+```jsx
+<input
+  list="dosen-suggestions"
+  value={formData.dosen_pengampu}
+  onChange={(e) => setFormData({ ...formData, dosen_pengampu: e.target.value })}
+  placeholder="Ketik nama dosen pengampu..."
+/>
+<datalist id="dosen-suggestions">
+  {dosenList.map((d) => (
+    <option key={d.id} value={d.nama_lengkap} />
+  ))}
+</datalist>
+```
+
+### D. Filter & Pencarian Mata Kuliah
+- **Filter Prodi**: Dropdown filter Teknik Informatika / Sistem Informasi / Semua.
+- **Filter Semester**: Dropdown filter Semester 1-8 / Semua.
+- **Pencarian**: Pencarian real-time berdasarkan nama atau kode mata kuliah.
+
+### E. Export Mata Kuliah
+- **Export Excel**: Download data mata kuliah ke file `.xlsx`.
+- **Export PDF**: Download laporan mata kuliah ke file `.pdf` berformat STMIK Bandung.
+
+---
+
+## 📝 14. TUTORIAL INTI PERWALIAN: BUILDER KRS MATAKULIAH DINAMIS & APPROVAL
+
+Lokasi File: **`src/pages/perwalian/PerwalianListPage.jsx`**
 Service: **`src/services/perwalianService.js`**
 
 ### A. Dynamic Course Row Builder (Mahasiswa)
-Mahasiswa dapat menyusun rencana studi semester secara dinamis:
-- Menambah baris matkul (`+ Tambah Matkul`).
-- Menghapus baris matkul.
-- **Kalkulasi Otomatis Total SKS**: Menghitung total beban SKS secara *real-time*:
-  ```javascript
-  const totalSks = matakuliahList.reduce((acc, item) => acc + Number(item.sks || 0), 0);
-  ```
+```javascript
+const totalSks = matakuliahList.reduce((acc, item) => acc + Number(item.sks || 0), 0);
+```
+- Tombol **`+ Tambah Matkul`**: Menambah baris baru ke array `matakuliahList`.
+- Tombol **`🗑️`**: Menghapus baris tertentu dari array.
+- Kolom: Kode Matkul, Nama Matkul, SKS (1–6), Kelas.
+- **Total SKS** terhitung otomatis secara real-time.
 
 ### B. Aturan Proteksi Status Pending
 - Tombol **Edit** dan **Hapus Pengajuan** hanya aktif jika status pengajuan masih `'Pending'`.
-- Pengajuan yang sudah `'Disetujui'` atau `'Ditolak'` tidak dapat diubah kembali.
+- Pengajuan `'Disetujui'` atau `'Ditolak'` tidak dapat diubah kembali.
 
 ### C. Modal Review & Catatan Evaluasi (Dosen Wali)
-- Dosen Wali membuka modal review untuk memeriksa rencana KRS mahasiswa bimbingannya.
-- Dosen memilih status (`Disetujui` / `Ditolak`) dan memberikan masukan pada kolom `catatan_dosen`.
-- Keputusan langsung tersimpan dan memicu notifikasi toast serta pencatatan ke audit log.
+- Dosen membuka modal review untuk memeriksa rencana KRS mahasiswa bimbingannya.
+- Memilih status (`Disetujui` / `Ditolak`) dan mengisi `catatan_dosen`.
+- Keputusan langsung tersimpan dan memicu toast notifikasi serta audit log.
+
+### D. Export Perwalian Scoped
+```javascript
+// Mahasiswa hanya bisa export datanya sendiri
+// Dosen hanya bisa export mahasiswa bimbingannya
+const handleExportExcel = async () => {
+  const params = {};
+  if (hasRole('Mahasiswa')) params.mahasiswa_id = user.mahasiswa?.id;
+  if (hasRole('Dosen')) params.dosen_id = user.dosen?.id;
+
+  const data = await perwalianService.exportExcel(params);
+  if (!data || data.length === 0) {
+    toast.warning('Belum ada data perwalian yang dapat diekspor.');
+    return;
+  }
+  exportToExcel(rows, 'Rekap_Perwalian_STMIK_Bandung');
+};
+```
 
 ---
 
-## 📜 14. TUTORIAL RIWAYAT BIMBINGAN & LINIMASA AUDIT TRAIL
+## 📜 15. TUTORIAL RIWAYAT BIMBINGAN & LINIMASA AUDIT TRAIL
 
 Lokasi File: **`src/pages/riwayat/RiwayatPage.jsx`**
 
@@ -424,24 +560,41 @@ Menampilkan seluruh histori bimbingan dalam bentuk kartu linimasa (*timeline*) v
 - Nama & NIM Mahasiswa.
 - Dosen Wali Pembimbing.
 - Semester & Total SKS Rencana.
-- Badge Status (`Disetujui`, `Pending`, `Ditolak`).
+- **Badge Status** (`Disetujui` 🟢, `Pending` 🟡, `Ditolak` 🔴).
 - Catatan / saran yang diberikan oleh Dosen Wali.
 - Tanggal & waktu persetujuan diproses.
 
 ---
 
-## 👤 15. TUTORIAL PROFIL PENGGUNA & PEMBARUAN BIODATA
+## 👤 16. TUTORIAL PROFIL PENGGUNA, FOTO UPLOAD & KARTU DOSEN WALI
 
-Lokasi File: **`src/pages/profile/ProfilePage.jsx`**  
+Lokasi File: **`src/pages/profile/ProfilePage.jsx`**
 Service: **`src/services/authService.js`**
 
-1. Menampilkan kartu identitas avatar inisial nama, email, dan badge role pengguna.
-2. Form untuk memperbarui Nama Lengkap, Email Resmi, dan Nomor Telepon/WhatsApp.
-3. Saat berhasil disimpan, state user di `authStore` dan `localStorage` langsung diperbarui secara instan.
+### A. Form Update Profil
+1. Memperbarui **Nama Lengkap**, **Email Resmi**, dan **Nomor Telepon/WhatsApp**.
+2. Saat berhasil disimpan, state user di `authStore` dan `localStorage` langsung diperbarui secara instan.
+3. Toast sukses: *"Informasi profil berhasil diperbarui!"*
+
+### B. Upload Foto Profil
+1. Klik area foto untuk memilih file gambar dari komputer.
+2. Foto di-preview secara lokal sebelum diunggah.
+3. Klik **"Simpan Foto"** untuk mengunggah ke server backend.
+4. Toast sukses: *"Foto profil berhasil diunggah dan tersimpan!"*
+
+### C. Kartu Dosen Wali Pembimbing (Khusus Mahasiswa)
+Halaman Profil untuk pengguna Mahasiswa menampilkan kartu lengkap informasi **Dosen Wali Pembimbing Akademik**:
+- Foto profil dosen.
+- Nama lengkap & NIDN.
+- Pendidikan terakhir.
+- Email official.
+- Nomor WhatsApp.
+- Tempat & Tanggal Lahir.
+- Alamat kantor/domisili (jika terisi).
 
 ---
 
-## ⚙️ 16. TUTORIAL PENGATURAN & KELOLA USER/ROLE SPATIE (ADMIN ONLY)
+## ⚙️ 17. TUTORIAL PENGATURAN & KELOLA USER/ROLE SPATIE (ADMIN ONLY)
 
 Lokasi File:
 - **Pengaturan Umum**: `src/pages/settings/SettingsPage.jsx`
@@ -449,41 +602,60 @@ Lokasi File:
 - **Service**: `src/services/userService.js`
 
 ### Fitur User Management (Khusus Administrator):
-1. Menampilkan daftar seluruh akun terdaftar di sistem beserta Role Spatie masing-masing (`Admin`, `Dosen`, `Mahasiswa`).
-2. Modal pembuatan user baru dan penetapan role Spatie.
-3. Modal edit nama, email, dan penggantian role.
-4. Fitur pencarian user dan filter berdasarkan Role.
+1. Daftar seluruh akun terdaftar beserta Role Spatie (`Admin`, `Dosen`, `Mahasiswa`).
+2. **Tambah User Baru dengan Form Dinamis**:
+   - Pilih **Role = Mahasiswa** → Muncul field: NIM, Program Studi, Tahun Angkatan, dan **Dropdown Dosen Wali**.
+   - Pilih **Role = Dosen** → Muncul field: NIDN dan Gelar Akademik.
+   - Pilih **Role = Admin** → Tidak ada field tambahan.
+3. **Edit User**: Ubah nama, email, dan ganti role.
+4. **Pencarian & Filter**: Cari user berdasarkan nama/email, filter berdasarkan role.
+5. **Hapus User**: Konfirmasi SweetAlert2 sebelum menghapus akun beserta data terkait.
+
+### Contoh Tampilan Form Dinamis:
+```jsx
+{selectedRole === 'Mahasiswa' && (
+  <>
+    <input placeholder="NIM Mahasiswa (contoh: 3200001)" ... />
+    <select> {/* Pilihan Prodi */} </select>
+    <input placeholder="Tahun Angkatan (contoh: 2023)" ... />
+    <select> {/* Pilih Dosen Wali - opsional */}
+      <option value="">— Belum ada Dosen Wali —</option>
+      {dosenList.map(d => <option key={d.id} value={d.id}>{d.nama_lengkap}</option>)}
+    </select>
+  </>
+)}
+{selectedRole === 'Dosen' && (
+  <>
+    <input placeholder="NIDN Dosen (contoh: 0123456789)" ... />
+    <input placeholder="Gelar (contoh: S.Kom., M.T.)" ... />
+  </>
+)}
+```
 
 ---
 
-## 📥 17. TUTORIAL EKSPOR SELURUH DATA KE PDF MULTI-PAGE & FILE EXCEL
+## 📥 18. TUTORIAL EKSPOR SELURUH DATA KE PDF MULTI-PAGE & FILE EXCEL
 
 Lokasi File: **`src/utils/exportHelpers.js`**
 
-### A. Ekspor ke File Excel Asli (.xlsx)
-Menggunakan pustaka `xlsx` (SheetJS) untuk mengubah array data JavaScript menjadi file workbook spreadsheet:
+### A. Ekspor ke File Excel (.xlsx)
 ```javascript
 export const exportToExcel = (dataRows, fileName) => {
   const worksheet = XLSX.utils.aoa_to_sheet(dataRows);
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Perwalian');
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
   XLSX.writeFile(workbook, `${fileName}_${new Date().toISOString().slice(0, 10)}.xlsx`);
 };
 ```
 
-### B. Ekspor Seluruh Data ke Dokumen PDF Asli Multi-Page (.pdf)
-Fungsi `handleExportPDF` mengambil **seluruh data dari halaman 1 sampai 5 (50 mahasiswa / 100 perwalian)**, lalu men-generate dokumen PDF asli dengan header resmi STMIK Bandung dan memecah halaman secara otomatis (*multi-page auto table*):
-
+### B. Ekspor ke Dokumen PDF Multi-Page (.pdf)
 ```javascript
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-
 export const exportToPDF = (headers, rows, title, fileName) => {
   const doc = new jsPDF('p', 'pt', 'a4');
 
-  // Header Surat STMIK Bandung
+  // Header Resmi STMIK Bandung
   doc.setFontSize(14);
-  doc.setTextColor(37, 99, 235); // Primary Blue
+  doc.setTextColor(37, 99, 235);
   doc.text('STMIK BANDUNG', 40, 40);
 
   doc.setFontSize(10);
@@ -494,7 +666,7 @@ export const exportToPDF = (headers, rows, title, fileName) => {
   doc.setTextColor(100, 116, 139);
   doc.text(`Dicetak pada: ${new Date().toLocaleDateString('id-ID')} WIB`, 40, 72);
 
-  // AutoTable Multi-Page Renderer
+  // AutoTable Multi-Page
   autoTable(doc, {
     head: [headers],
     body: rows,
@@ -505,31 +677,114 @@ export const exportToPDF = (headers, rows, title, fileName) => {
     alternateRowStyles: { fillColor: [248, 250, 252] },
   });
 
-  // Otomatis men-download file PDF ke komputer
   doc.save(`${fileName}_${new Date().toISOString().slice(0, 10)}.pdf`);
 };
 ```
 
----
-
-## ✨ 18. TUTORIAL ANIMASI UI, TOAST NOTIFICATION & SWEETALERT2
-
-1. **Framer Motion Micro-Interactions**:
-   - Tombol interaktif memiliki animasi sentuh `whileTap={{ scale: 0.98 }}` dan hover `whileHover={{ scale: 1.01 }}`.
-   - Dialog Modal memiliki transisi smooth zoom dan fade-in.
-2. **Sonner Toast**: Memberikan respon visual cepat di sudut layar:
-   ```javascript
-   toast.success('Pengajuan perwalian berhasil disimpan!');
-   toast.error('Gagal memproses data.');
-   ```
-3. **SweetAlert2 Confirmation**: Dialog konfirmasi modern sebelum melakukan aksi berbahaya (penghapusan data).
+### C. Fitur Export Per Modul
+| Modul | Excel | PDF | Scoped |
+|:---|:---:|:---:|:---:|
+| Data Mahasiswa | ✅ | ✅ | ❌ (Admin melihat semua) |
+| Data Dosen | ✅ | ✅ | ❌ (Admin melihat semua) |
+| Mata Kuliah | ✅ | ✅ | ❌ |
+| Rekap Perwalian | ✅ | ✅ | ✅ (Scoped per role) |
 
 ---
 
-## 🚫 19. TUTORIAL PENANGANAN HALAMAN ERROR (403, 404, 500)
+## ✨ 19. TUTORIAL ANIMASI UI, TOAST NOTIFICATION & SWEETALERT2
+
+### A. Toast Notification (Sonner)
+Seluruh toast notification menggunakan **Bahasa Indonesia** yang sopan dan informatif:
+```javascript
+// Sukses
+toast.success('Mata kuliah baru berhasil disimpan ke database!');
+toast.success('Data Mahasiswa berhasil diperbarui.');
+toast.success('Berhasil menugaskan 5 mahasiswa ke Dosen Wali Dr. Budi Santosa.');
+toast.success('Foto profil berhasil diunggah dan tersimpan!');
+
+// Error
+toast.error('NIM sudah terdaftar dalam sistem.');
+toast.error('Anda tidak memiliki hak akses untuk fitur ini.');
+toast.error('Gagal menyimpan data mahasiswa.');
+
+// Info
+toast.info('Menyiapkan file Excel data dosen...');
+
+// Warning
+toast.warning('Belum ada data perwalian yang dapat diekspor.');
+```
+
+### B. SweetAlert2 Confirmation Dialog
+```javascript
+MySwal.fire({
+  title: 'Hapus Data Mahasiswa?',
+  text: `Apakah Anda yakin ingin menghapus data ${mhs.nama_lengkap} (${mhs.nim})? Akun user terkait juga akan terhapus.`,
+  icon: 'warning',
+  showCancelButton: true,
+  confirmButtonColor: '#ef4444',
+  cancelButtonColor: '#64748b',
+  confirmButtonText: 'Ya, Hapus Data',
+  cancelButtonText: 'Batal',
+});
+```
+
+### C. Error Handling yang Informatif
+Setiap `onError` mutation menampilkan pesan yang relevan:
+```javascript
+onError: (err) => {
+  const errorMsg =
+    err.response?.data?.message ||                            // Pesan dari backend
+    Object.values(err.response?.data?.errors || {})?.[0]?.[0] || // Pesan validasi pertama
+    'Gagal menyimpan data. Silakan coba lagi.';               // Fallback
+  toast.error(errorMsg);
+},
+```
+
+---
+
+## 🚫 20. TUTORIAL PENANGANAN HALAMAN ERROR (403, 404, 500)
 
 Lokasi Folder: **`src/pages/errors/`**
 
-1. **Error 403 Forbidden (`Error403.jsx`)**: Ditampilkan saat role pengguna tidak diizinkan membuka menu tertentu (dilengkapi tombol kembali ke Dashboard).
-2. **Error 404 Not Found (`Error404.jsx`)**: Ditampilkan saat rute URL tidak ditemukan di sistem.
-3. **Error 500 Server Error (`Error500.jsx`)**: Ditampilkan saat terjadi kesalahan koneksi server dengan tombol muat ulang (*reload*).
+1. **Error 403 Forbidden (`Error403.jsx`)**: Ditampilkan saat role pengguna tidak diizinkan membuka menu tertentu. Dilengkapi tombol **Kembali ke Dashboard** dan penjelasan bahwa fitur terbatas untuk role tertentu.
+
+2. **Error 404 Not Found (`Error404.jsx`)**: Ditampilkan saat rute URL tidak ditemukan di sistem. Dilengkapi tombol kembali ke halaman utama.
+
+3. **Error 500 Server Error (`Error500.jsx`)**: Ditampilkan saat terjadi kesalahan koneksi server. Dilengkapi tombol **Muat Ulang Halaman**.
+
+> **Catatan Penting**: Jika pengguna mengetik URL halaman yang tidak sesuai dengan role-nya secara langsung di browser (misal Mahasiswa mengetik `/matakuliah`), `RoleRoute` akan mendeteksi dan mengarahkan otomatis ke halaman `Error403`.
+
+---
+
+## 🇮🇩 21. TUTORIAL NOTIFIKASI BAHASA INDONESIA TERPADU
+
+Seluruh teks yang tampil kepada pengguna — baik dari frontend maupun yang dikembalikan backend — menggunakan **Bahasa Indonesia yang baku, sopan, dan mudah dipahami**:
+
+### Peta Pesan Per Modul:
+
+| Aksi | Pesan Toast |
+|:---|:---|
+| Login sukses | *"Selamat datang kembali, [Nama]!"* |
+| Login gagal | *"Kredensial email atau password yang Anda masukkan salah."* |
+| Email tidak terdaftar | *"Email tidak terdaftar dalam database sistem STMIK Bandung."* |
+| Reset password sukses | *"Password berhasil diperbarui! Silakan login dengan kata sandi baru."* |
+| Simpan matakuliah | *"Mata kuliah baru berhasil disimpan ke database!"* |
+| Update matakuliah | *"Data mata kuliah berhasil diperbarui."* |
+| Hapus matakuliah | *"Mata kuliah berhasil dihapus dari sistem."* |
+| Kode matkul duplikat | *"Kode mata kuliah ini sudah terdaftar. Silakan gunakan kode lain."* |
+| Simpan mahasiswa | *"Data Mahasiswa berhasil ditambahkan / diperbarui."* |
+| Hapus mahasiswa | *"Data Mahasiswa berhasil dihapus."* |
+| NIM duplikat | *"NIM sudah terdaftar dalam sistem."* |
+| Assign dosen wali | *"Berhasil menugaskan [X] mahasiswa ke Dosen Wali [Nama]."* |
+| Reset password mahasiswa | *"Password berhasil direset ke Mahasiswa123."* |
+| Reset password dosen | *"Password berhasil direset ke Dosen123."* |
+| Tambah user | *"Pengguna baru berhasil ditambahkan."* |
+| Export kosong | *"Belum ada data perwalian yang dapat diekspor."* |
+| Export sukses | *"Berhasil mengunduh [X] data ke Excel / PDF."* |
+| Foto upload sukses | *"Foto profil berhasil diunggah dan tersimpan!"* |
+| Profil update | *"Informasi profil berhasil diperbarui!"* |
+| Pengajuan perwalian | *"Pengajuan perwalian berhasil dikirim!"* |
+| Perwalian disetujui | *"Perwalian berhasil disetujui dan ditandai selesai."* |
+| Sesi berakhir (401) | *"Sesi login Anda telah berakhir. Silakan login kembali."* |
+| Tidak punya akses (403) | *"Anda tidak memiliki hak akses untuk membuka halaman atau fitur ini."* |
+| Data tidak ditemukan (404) | *"Data yang Anda cari tidak ditemukan di dalam sistem."* |

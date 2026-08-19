@@ -16,6 +16,7 @@ import { ResetPassword } from '../pages/auth/ResetPassword';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { MahasiswaListPage } from '../pages/mahasiswa/MahasiswaListPage';
 import { DosenListPage } from '../pages/dosen/DosenListPage';
+import { MatakuliahListPage } from '../pages/matakuliah/MatakuliahListPage';
 import { PerwalianListPage } from '../pages/perwalian/PerwalianListPage';
 import { RiwayatPage } from '../pages/riwayat/RiwayatPage';
 import { ProfilePage } from '../pages/profile/ProfilePage';
@@ -47,16 +48,26 @@ export const AppRoutes = () => {
       {/* Rute Terproteksi Login */}
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
+          {/* Rute Umum (Admin, Dosen Wali, Mahasiswa) */}
           <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/mahasiswa" element={<MahasiswaListPage />} />
-          <Route path="/dosen" element={<DosenListPage />} />
           <Route path="/perwalian" element={<PerwalianListPage />} />
           <Route path="/riwayat" element={<RiwayatPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
 
-          {/* Rute Khusus Admin */}
+          {/* Rute Khusus Mahasiswa & Admin (Dosen Dilarang Akses / 403) */}
+          <Route element={<RoleRoute allowedRoles={['Admin', 'Mahasiswa']} />}>
+            <Route path="/matakuliah" element={<MatakuliahListPage />} />
+          </Route>
+
+          {/* Rute Khusus Dosen Wali & Admin (Mahasiswa Dilarang Akses) */}
+          <Route element={<RoleRoute allowedRoles={['Admin', 'Dosen']} />}>
+            <Route path="/mahasiswa" element={<MahasiswaListPage />} />
+          </Route>
+
+          {/* Rute Khusus Super Admin */}
           <Route element={<RoleRoute allowedRoles={['Admin']} />}>
+            <Route path="/dosen" element={<DosenListPage />} />
             <Route path="/settings/users" element={<UserManagementPage />} />
           </Route>
 
