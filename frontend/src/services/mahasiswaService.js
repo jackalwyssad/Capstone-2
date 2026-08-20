@@ -39,4 +39,11 @@ export const mahasiswaService = {
     const response = await api.post(`/mahasiswa/${id}/reset-password`);
     return response.data;
   },
+
+  generateNim: async (prodi, angkatan) => {
+    const response = await api.get('/mahasiswa/generate-nim', {
+      params: { prodi, angkatan },
+    });
+    return response.data;
+  },
 };

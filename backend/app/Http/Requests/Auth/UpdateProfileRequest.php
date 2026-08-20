@@ -23,6 +23,7 @@ class UpdateProfileRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$userId],
             'phone_number' => ['nullable', 'string', 'max:20'],
+            'jenis_kelamin' => ['nullable', 'string', 'in:Laki-laki,Perempuan'],
             'avatar' => ['nullable', 'string'],
         ];
     }

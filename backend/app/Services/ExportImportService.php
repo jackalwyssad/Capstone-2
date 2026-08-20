@@ -67,28 +67,88 @@ class ExportImportService
     }
 
     /**
-     * Memproses data impor Mahasiswa dari struktur JSON/Array.
+     * Memproses data impor Mahasiswa dari struktur JSON/Array dengan Proteksi Keamanan Data & Auto-NIM Generator.
+     * - Jika NIM tidak disertakan, sistem otomatis membuatkan NIM baru sesuai urutan standar STMIK.
+     * - Jika NIM sudah ada dan NAMA BERBEDA (indikasi human error / salah ketik NIM), baris DILEWATI (SKIPPED) agar data orang lain tidak tertimpa.
+     * - Jika NIM sudah ada dan NAMA SAMA, data diperbarui (sinkronisasi IPK/SKS).
+     * - Jika NIM belum ada, sistem membuat data mahasiswa baru beserta akun user login-nya.
      */
-    public function importMahasiswaData(array $items): int
+    public function importMahasiswaData(array $items): array
     {
-        $count = 0;
+        $mahasiswaService = app(MahasiswaService::class);
+        $created = 0;
+        $updated = 0;
+        $skipped = 0;
+        $skippedDetails = [];
+
         foreach ($items as $item) {
-            if (empty($item['nim']) || empty($item['nama_lengkap'])) {
+            if (empty($item['nama_lengkap'])) {
                 continue;
             }
 
-            $mahasiswaService = app(MahasiswaService::class);
-            $mahasiswaService->createMahasiswa([
-                'nim' => $item['nim'],
-                'nama_lengkap' => $item['nama_lengkap'],
-                'prodi' => $item['prodi'] ?? 'Teknik Informatika',
-                'angkatan' => $item['angkatan'] ?? date('Y'),
-                'ipk_terakhir' => $item['ipk_terakhir'] ?? 0.00,
-                'sks_lulus' => $item['sks_lulus'] ?? 0,
-            ]);
-            $count++;
+            $namaLengkap  = trim((string)$item['nama_lengkap']);
+            $prodi        = !empty($item['prodi']) ? trim((string)$item['prodi']) : 'Teknik Informatika';
+            $angkatan     = !empty($item['angkatan']) ? trim((string)$item['angkatan']) : date('Y');
+            $jenisKelamin = !empty($item['jenis_kelamin']) ? trim((string)$item['jenis_kelamin']) : 'Laki-laki';
+            $ipk          = isset($item['ipk_terakhir']) ? (float)$item['ipk_terakhir'] : 0.00;
+            $sks          = isset($item['sks_lulus']) ? (int)$item['sks_lulus'] : 0;
+            $nim          = !empty($item['nim']) ? trim((string)$item['nim']) : null;
+
+            // Jika NIM tidak diisi, otomatis buatkan NIM baru sesuai urutan standar STMIK
+            if (empty($nim)) {
+                $nim = $mahasiswaService->generateNextNim($prodi, $angkatan);
+            }
+
+            // Cek apakah mahasiswa dengan NIM tersebut sudah terdaftar
+            $existingMhs = Mahasiswa::where('nim', $nim)->first();
+
+            if ($existingMhs) {
+                // Proteksi Kesalahan Manusia: Cek kesamaan nama
+                $isSamePerson = strtolower(trim($existingMhs->nama_lengkap)) === strtolower($namaLengkap);
+
+                if (! $isSamePerson) {
+                    // Nama berbeda: Jangan timpa data orang lain! Lewati baris ini dan catat di riwayat lewati.
+                    $skipped++;
+                    $skippedDetails[] = [
+                        'nim'            => $nim,
+                        'nama_input'     => $namaLengkap,
+                        'nama_terdaftar' => $existingMhs->nama_lengkap,
+                        'alasan'         => "NIM {$nim} sudah terdaftar atas nama {$existingMhs->nama_lengkap}. Data dilewati untuk mencegah penimpaan data salah.",
+                    ];
+                    continue;
+                }
+
+                // Jika nama sama, perbarui data akademik pelengkapnya
+                $mahasiswaService->updateMahasiswa($existingMhs, [
+                    'nama_lengkap'  => $namaLengkap,
+                    'jenis_kelamin' => $jenisKelamin,
+                    'prodi'         => $prodi,
+                    'angkatan'      => $angkatan,
+                    'ipk_terakhir'  => $ipk,
+                    'sks_lulus'     => $sks,
+                ]);
+                $updated++;
+            } else {
+                // Buat mahasiswa baru dan akun user login-nya
+                $mahasiswaService->createMahasiswa([
+                    'nim'           => $nim,
+                    'nama_lengkap'  => $namaLengkap,
+                    'jenis_kelamin' => $jenisKelamin,
+                    'prodi'         => $prodi,
+                    'angkatan'      => $angkatan,
+                    'ipk_terakhir'  => $ipk,
+                    'sks_lulus'     => $sks,
+                ]);
+                $created++;
+            }
         }
 
-        return $count;
+        return [
+            'total'           => $created + $updated + $skipped,
+            'created_count'   => $created,
+            'updated_count'   => $updated,
+            'skipped_count'   => $skipped,
+            'skipped_details' => $skippedDetails,
+        ];
     }
 }

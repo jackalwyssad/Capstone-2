@@ -5,9 +5,11 @@ import { mahasiswaService } from '../../services/mahasiswaService';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
+import { Select } from '../../components/common/Select';
 import { Modal } from '../../components/common/Modal';
 import { Card } from '../../components/common/Card';
 import { Skeleton } from '../../components/common/Skeleton';
+import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
 import { exportToExcel, exportToPDF } from '../../utils/exportHelpers';
 import { toast } from 'sonner';
@@ -30,9 +32,9 @@ import {
 const MySwal = withReactContent(Swal);
 
 /**
- * Halaman Kelola Data Dosen Wali STMIK Bandung (Admin)
- * Mendukung CRUD Dosen Wali (dengan Tempat/Tgl Lahir, Pendidikan Terakhir, Alamat, Foto),
- * Reset Password (Dosen123!), Penetapan Wali, Total Perwalian, Rekap Penugasan, dan Export Excel/PDF.
+ * Halaman Kelola Data Dosen STMIK Bandung (Admin Only)
+ * Mendukung CRUD Lengkap, Searching, Filtering Kuota/Status, Pagination,
+ * Reset Password (Dosen123), Penetapan Wali, Total Perwalian, Rekap Penugasan, dan Export Excel/PDF.
  */
 export const DosenListPage = () => {
   const queryClient = useQueryClient();
@@ -78,6 +80,7 @@ export const DosenListPage = () => {
     reset({
       nidn: '',
       nama_lengkap: '',
+      jenis_kelamin: 'Laki-laki',
       gelar: 'M.T.',
       email: '',
       no_hp: '',
@@ -95,6 +98,7 @@ export const DosenListPage = () => {
     setSelectedDosen(dosen);
     setValue('nidn', dosen.nidn);
     setValue('nama_lengkap', dosen.nama_lengkap);
+    setValue('jenis_kelamin', dosen.jenis_kelamin || 'Laki-laki');
     setValue('gelar', dosen.gelar);
     setValue('email', dosen.email);
     setValue('no_hp', dosen.no_hp || '');
@@ -124,11 +128,15 @@ export const DosenListPage = () => {
       }
       return dosenService.createDosen(data);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success(selectedDosen ? 'Data Dosen Wali diperbarui.' : 'Dosen Wali berhasil dibuat.');
-      queryClient.invalidateQueries(['dosen']);
-      queryClient.invalidateQueries(['dosen-all-list']);
-      queryClient.invalidateQueries(['dosen-all-rekap']);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['dosen'] }),
+        queryClient.invalidateQueries({ queryKey: ['dosen-all-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['dosen-all-rekap'] }),
+        queryClient.invalidateQueries({ queryKey: ['users'] }),
+        queryClient.refetchQueries({ queryKey: ['dosen'] }),
+      ]);
       setIsFormModalOpen(false);
     },
     onError: (err) => {
@@ -139,16 +147,36 @@ export const DosenListPage = () => {
   // Mutation Assign Dosen Wali
   const assignMutation = useMutation({
     mutationFn: () => dosenService.assignWali({ dosen_id: selectedDosen.id, mahasiswa_ids: selectedMhsIds }),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success(`Berhasil menugaskan ${selectedMhsIds.length} mahasiswa ke Dosen Wali ${selectedDosen.nama_lengkap}.`);
-      queryClient.invalidateQueries(['dosen']);
-      queryClient.invalidateQueries(['dosen-all-list']);
-      queryClient.invalidateQueries(['mahasiswa']);
-      queryClient.invalidateQueries(['dosen-all-rekap']);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['dosen'] }),
+        queryClient.invalidateQueries({ queryKey: ['dosen-all-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['mahasiswa'] }),
+        queryClient.invalidateQueries({ queryKey: ['dosen-all-rekap'] }),
+        queryClient.refetchQueries({ queryKey: ['dosen'] }),
+      ]);
       setIsAssignModalOpen(false);
     },
     onError: (err) => {
       toast.error('Gagal menugaskan Dosen Wali.');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => dosenService.deleteDosen(id),
+    onSuccess: async () => {
+      toast.success('Dosen Wali berhasil dihapus.');
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['dosen'] }),
+        queryClient.invalidateQueries({ queryKey: ['dosen-all-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['dosen-all-rekap'] }),
+        queryClient.invalidateQueries({ queryKey: ['users'] }),
+        queryClient.refetchQueries({ queryKey: ['dosen'] }),
+      ]);
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Gagal menghapus dosen.');
     },
   });
 
@@ -164,12 +192,7 @@ export const DosenListPage = () => {
       cancelButtonText: 'Batal',
     }).then((res) => {
       if (res.isConfirmed) {
-        dosenService.deleteDosen(dosen.id).then(() => {
-          toast.success('Dosen Wali berhasil dihapus.');
-          queryClient.invalidateQueries(['dosen']);
-          queryClient.invalidateQueries(['dosen-all-list']);
-          queryClient.invalidateQueries(['dosen-all-rekap']);
-        });
+        deleteMutation.mutate(dosen.id);
       }
     });
   };
@@ -204,10 +227,11 @@ export const DosenListPage = () => {
       const allRes = await dosenService.getDosen({ per_page: 500, search });
       const list = allRes?.data || dosenList;
       const rows = [
-        ['NIDN', 'Nama Lengkap & Gelar', 'Email', 'No. WhatsApp', 'Pendidikan Terakhir', 'Tempat/Tgl Lahir', 'Alamat', 'Mahasiswa Bimbingan', 'Total Perwalian', 'Kuota'],
+        ['NIDN', 'Nama Lengkap & Gelar', 'Jenis Kelamin', 'Email', 'No. WhatsApp', 'Pendidikan Terakhir', 'Tempat/Tgl Lahir', 'Alamat', 'Mahasiswa Bimbingan', 'Total Perwalian', 'Kuota'],
         ...list.map((d) => [
           d.nidn,
           d.nama_lengkap,
+          d.jenis_kelamin || 'Laki-laki',
           d.email,
           d.no_hp || '-',
           d.pendidikan_terakhir || '-',
@@ -231,11 +255,12 @@ export const DosenListPage = () => {
       toast.info('Menyiapkan file PDF data dosen...');
       const allRes = await dosenService.getDosen({ per_page: 500, search });
       const list = allRes?.data || dosenList;
-      const headers = ['No', 'NIDN', 'Nama Dosen & Gelar', 'Pendidikan Terakhir', 'Email Official', 'WhatsApp', 'Mhs Bimbingan', 'Total Perwalian'];
+      const headers = ['No', 'NIDN', 'Nama Dosen & Gelar', 'Jenis Kelamin', 'Pendidikan Terakhir', 'Email Official', 'WhatsApp', 'Mhs Bimbingan', 'Total Perwalian'];
       const rows = list.map((d, idx) => [
         idx + 1,
         d.nidn,
         d.nama_lengkap,
+        d.jenis_kelamin || 'Laki-laki',
         d.pendidikan_terakhir || '-',
         d.email,
         d.no_hp || '-',
@@ -259,8 +284,8 @@ export const DosenListPage = () => {
   return (
     <div>
       <PageHeader
-        title="Manajemen Dosen Wali"
-        description="Kelola data Dosen Pembimbing Akademik STMIK Bandung, biodata lengkap, penetapan wali mahasiswa asuhan, dan rekapitulasi kuota."
+        title="Dosen Pembimbing Akademik (Dosen Wali)"
+        description="Kelola data Dosen Wali STMIK Bandung, monitoring kuota bimbingan mahasiswa perwalian, rekapitulasi persetujuan, dan export laporan."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" icon={FileSpreadsheet} onClick={handleExportExcel}>
@@ -269,17 +294,14 @@ export const DosenListPage = () => {
             <Button variant="outline" size="sm" icon={FileText} onClick={handleExportPDF}>
               Export PDF
             </Button>
-            <Button variant="secondary" size="sm" icon={BarChart3} onClick={() => setIsRekapModalOpen(true)}>
-              Rekap Penugasan Wali
-            </Button>
             <Button size="sm" icon={Plus} onClick={openCreateModal}>
-              Tambah Dosen Wali
+              Tambah Dosen Baru
             </Button>
           </div>
         }
       />
 
-      {/* Filter Bar */}
+      {/* Searching & Filter Bar */}
       <Card hover={false} className="mb-6">
         <div className="w-full sm:w-80">
           <Input
@@ -297,10 +319,7 @@ export const DosenListPage = () => {
       {/* Table Dosen Wali */}
       <Card hover={false}>
         {isLoading ? (
-          <div className="space-y-3 p-4">
-            <Skeleton className="h-10" />
-            <Skeleton className="h-10" />
-          </div>
+          <LoadingSpinner text="Memuat data Dosen Wali STMIK Bandung..." fullHeight />
         ) : dosenList.length === 0 ? (
           <EmptyState title="Data Dosen Kosong" description="Belum ada Dosen Wali terdaftar." />
         ) : (
@@ -311,6 +330,7 @@ export const DosenListPage = () => {
                   <tr>
                     <th className="p-3">Foto & Dosen</th>
                     <th className="p-3">NIDN</th>
+                    <th className="p-3">Jenis Kelamin</th>
                     <th className="p-3">Pendidikan Terakhir</th>
                     <th className="p-3">Alamat</th>
                     <th className="p-3">Kontak</th>
@@ -336,6 +356,15 @@ export const DosenListPage = () => {
                         </div>
                       </td>
                       <td className="p-3 font-semibold text-primary-600 dark:text-primary-400">{dosen.nidn}</td>
+                      <td className="p-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          dosen.jenis_kelamin === 'Perempuan'
+                            ? 'bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800/60'
+                            : 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60'
+                        }`}>
+                          {dosen.jenis_kelamin === 'Perempuan' ? 'Perempuan' : 'Laki-laki'}
+                        </span>
+                      </td>
                       <td className="p-3 font-medium text-slate-700 dark:text-slate-300">{dosen.pendidikan_terakhir || '-'}</td>
                       <td className="p-3 text-slate-500 max-w-xs truncate" title={dosen.alamat || '-'}>{dosen.alamat || '-'}</td>
                       <td className="p-3">{dosen.no_hp || '-'}</td>
@@ -397,8 +426,20 @@ export const DosenListPage = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label="Jenis Kelamin"
+              options={[
+                { value: 'Laki-laki', label: 'Laki-laki' },
+                { value: 'Perempuan', label: 'Perempuan' },
+              ]}
+              {...register('jenis_kelamin')}
+            />
             <Input label="Gelar Akademik" placeholder="M.T. / M.Kom. / Ph.D." {...register('gelar')} />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="Pendidikan Terakhir" placeholder="S3 Doktor Ilmu Komputer / S2 Magister" {...register('pendidikan_terakhir')} />
+            <Input label="Email Official" type="email" placeholder="dosen@stmikbandung.ac.id" error={errors.email?.message} {...register('email', { required: 'Email wajib diisi' })} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -407,12 +448,11 @@ export const DosenListPage = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input label="Email Official" type="email" placeholder="dosen@stmikbandung.ac.id" error={errors.email?.message} {...register('email', { required: 'Email wajib diisi' })} />
             <Input label="No. WhatsApp / Telepon" placeholder="081234567890" {...register('no_hp')} />
+            <Input label="Kuota Maksimal Bimbingan" type="number" placeholder="30" {...register('kuota_bimbingan')} />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input label="Kuota Maksimal Bimbingan" type="number" placeholder="30" {...register('kuota_bimbingan')} />
+          <div className="grid grid-cols-1 gap-4">
             <Input label="URL Foto / Avatar (Opsional)" placeholder="https://..." {...register('foto')} />
           </div>
 

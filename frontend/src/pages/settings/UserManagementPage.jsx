@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userService } from '../../services/userService';
 import { dosenService } from '../../services/dosenService';
+import { mahasiswaService } from '../../services/mahasiswaService';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
@@ -9,11 +10,12 @@ import { Select } from '../../components/common/Select';
 import { Modal } from '../../components/common/Modal';
 import { Card } from '../../components/common/Card';
 import { Skeleton } from '../../components/common/Skeleton';
+import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { toast } from 'sonner';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useForm, useWatch } from 'react-hook-form';
-import { Plus, ShieldCheck, Pencil, Trash2, Search, Key, UserCheck, GraduationCap, Users } from 'lucide-react';
+import { Plus, ShieldCheck, Pencil, Trash2, Search, Key, UserCheck, GraduationCap, Users, Sparkles } from 'lucide-react';
 
 const MySwal = withReactContent(Swal);
 
@@ -29,6 +31,11 @@ export const UserManagementPage = () => {
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+
+  // Auto-NIM Generator States
+  const [suggestedNim, setSuggestedNim] = useState('');
+  const [isCustomNim, setIsCustomNim] = useState(false);
+  const [isCustomEmail, setIsCustomEmail] = useState(false);
 
   const { data: usersResponse, isLoading } = useQuery({
     queryKey: ['users', page, search, roleFilter],
@@ -62,17 +69,64 @@ export const UserManagementPage = () => {
 
   // Watch perubahan role secara realtime untuk memunculkan field NIM / NIDN / Dosen Wali
   const watchedRole = useWatch({ control, name: 'role', defaultValue: 'Mahasiswa' });
+  const watchedProdi = useWatch({ control, name: 'prodi', defaultValue: 'Teknik Informatika' });
+  const watchedAngkatan = useWatch({ control, name: 'angkatan', defaultValue: new Date().getFullYear().toString() });
+  const watchedNim = useWatch({ control, name: 'nim', defaultValue: '' });
+
+  // Generate NIM Otomatis saat modal tambah terbuka atau Prodi & Angkatan berubah
+  useEffect(() => {
+    if (!isFormModalOpen || selectedUser || watchedRole !== 'Mahasiswa') return;
+
+    const prodi = watchedProdi || 'Teknik Informatika';
+    const angkatan = watchedAngkatan || new Date().getFullYear().toString();
+
+    mahasiswaService.generateNim(prodi, angkatan)
+      .then((res) => {
+        if (res.success && res.data?.nim) {
+          setSuggestedNim(res.data.nim);
+          if (!isCustomNim) {
+            setValue('nim', res.data.nim);
+          }
+        }
+      })
+      .catch(() => {
+        const isIF = prodi.toLowerCase().includes('informatika');
+        const prefix = isIF ? '12' : '32';
+        const year2Digit = angkatan.replace(/\D/g, '').slice(-2) || String(new Date().getFullYear()).slice(-2);
+        const fallbackNim = `${prefix}${year2Digit}001`;
+        setSuggestedNim(fallbackNim);
+        if (!isCustomNim) {
+          setValue('nim', fallbackNim);
+        }
+      });
+  }, [watchedProdi, watchedAngkatan, watchedRole, isFormModalOpen, selectedUser, isCustomNim, setValue]);
+
+  // Otomatis sinkronkan email default mahasiswa [nim]@student.stmikbandung.ac.id
+  useEffect(() => {
+    if (!isFormModalOpen || selectedUser) return;
+
+    if (watchedRole === 'Mahasiswa' && !isCustomEmail) {
+      const activeNim = watchedNim || suggestedNim;
+      if (activeNim) {
+        setValue('email', `${activeNim.toLowerCase()}@student.stmikbandung.ac.id`);
+      }
+    }
+  }, [watchedNim, suggestedNim, watchedRole, isCustomEmail, isFormModalOpen, selectedUser, setValue]);
 
   const openCreateModal = () => {
     setSelectedUser(null);
+    setIsCustomNim(false);
+    setIsCustomEmail(false);
+    const currentYear = new Date().getFullYear().toString();
     reset({
       name: '',
       email: '',
       password: '',
       role: 'Mahasiswa',
+      jenis_kelamin: 'Laki-laki',
       nim: '',
       prodi: 'Teknik Informatika',
-      angkatan: '2024',
+      angkatan: currentYear,
       dosen_wali_id: '',
       nidn: '',
       gelar: '',
@@ -82,10 +136,13 @@ export const UserManagementPage = () => {
 
   const openEditModal = (user) => {
     setSelectedUser(user);
+    setIsCustomNim(true);
+    setIsCustomEmail(true);
     const userRole = user.roles?.[0] || 'Mahasiswa';
     setValue('name', user.name);
     setValue('email', user.email);
     setValue('role', userRole);
+    setValue('jenis_kelamin', user.mahasiswa?.jenis_kelamin || user.dosen?.jenis_kelamin || 'Laki-laki');
     setValue('nim', user.mahasiswa?.nim || '');
     setValue('prodi', user.mahasiswa?.prodi || 'Teknik Informatika');
     setValue('angkatan', user.mahasiswa?.angkatan || '2024');
@@ -96,18 +153,36 @@ export const UserManagementPage = () => {
   };
 
   const saveMutation = useMutation({
-    mutationFn: (data) => {
-      if (selectedUser) {
-        return userService.updateUser(selectedUser.id, data);
+    mutationFn: (formData) => {
+      const payload = { ...formData };
+
+      // Password default otomatis jika kosong
+      if (!payload.password) {
+        payload.password = payload.role === 'Mahasiswa' ? 'Mahasiswa123' : (payload.role === 'Dosen' ? 'Dosen123' : 'Admin123');
       }
-      return userService.createUser(data);
+
+      // Email default untuk mahasiswa otomatis jika kosong
+      if (!payload.email && payload.role === 'Mahasiswa') {
+        const nimVal = payload.nim || watchedNim || suggestedNim;
+        if (nimVal) {
+          payload.email = `${nimVal.toLowerCase()}@student.stmikbandung.ac.id`;
+        }
+      }
+
+      if (selectedUser) {
+        return userService.updateUser(selectedUser.id, payload);
+      }
+      return userService.createUser(payload);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success(selectedUser ? 'Data Pengguna diperbarui.' : 'Pengguna baru berhasil ditambahkan.');
-      queryClient.invalidateQueries(['users']);
-      queryClient.invalidateQueries(['mahasiswa']);
-      queryClient.invalidateQueries(['dosen']);
-      queryClient.invalidateQueries(['dosen-all-list']);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['users'] }),
+        queryClient.invalidateQueries({ queryKey: ['mahasiswa'] }),
+        queryClient.invalidateQueries({ queryKey: ['dosen'] }),
+        queryClient.invalidateQueries({ queryKey: ['dosen-all-list'] }),
+        queryClient.refetchQueries({ queryKey: ['users'] }),
+      ]);
       setIsFormModalOpen(false);
     },
     onError: (err) => {
@@ -116,6 +191,22 @@ export const UserManagementPage = () => {
         Object.values(err.response?.data?.errors || {})?.[0]?.[0] ||
         'Gagal menyimpan pengguna.';
       toast.error(errorMsg);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (userId) => userService.deleteUser(userId),
+    onSuccess: async () => {
+      toast.success('Pengguna berhasil dihapus.');
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['users'] }),
+        queryClient.invalidateQueries({ queryKey: ['mahasiswa'] }),
+        queryClient.invalidateQueries({ queryKey: ['dosen'] }),
+        queryClient.refetchQueries({ queryKey: ['users'] }),
+      ]);
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Gagal menghapus pengguna.');
     },
   });
 
@@ -131,12 +222,7 @@ export const UserManagementPage = () => {
       cancelButtonText: 'Batal',
     }).then((res) => {
       if (res.isConfirmed) {
-        userService.deleteUser(user.id).then(() => {
-          toast.success('Pengguna berhasil dihapus.');
-          queryClient.invalidateQueries(['users']);
-          queryClient.invalidateQueries(['mahasiswa']);
-          queryClient.invalidateQueries(['dosen']);
-        });
+        deleteMutation.mutate(user.id);
       }
     });
   };
@@ -210,11 +296,7 @@ export const UserManagementPage = () => {
 
       <Card hover={false}>
         {isLoading ? (
-          <div className="space-y-3 p-4">
-            <Skeleton className="h-10" />
-            <Skeleton className="h-10" />
-            <Skeleton className="h-10" />
-          </div>
+          <LoadingSpinner text="Memuat daftar kredensial pengguna & hak akses..." fullHeight />
         ) : (
           <div>
             <div className="overflow-x-auto">
@@ -353,23 +435,38 @@ export const UserManagementPage = () => {
               error={errors.name?.message}
               {...register('name', { required: 'Nama lengkap wajib diisi' })}
             />
-            <Input
-              label="Alamat Email"
-              type="email"
-              placeholder="user@stmikbandung.ac.id"
-              error={errors.email?.message}
-              {...register('email', { required: 'Email wajib diisi' })}
-            />
+            <div>
+              <Input
+                label="Alamat Email (Akun Login)"
+                type="email"
+                placeholder={watchedRole === 'Mahasiswa' ? 'Otomatis: [nim]@student.stmikbandung.ac.id' : 'user@stmikbandung.ac.id'}
+                error={errors.email?.message}
+                {...register('email', {
+                  required: watchedRole === 'Mahasiswa' ? false : 'Email wajib diisi',
+                  onChange: () => setIsCustomEmail(true),
+                })}
+              />
+              {watchedRole === 'Mahasiswa' && !selectedUser && (
+                <p className="text-[10px] text-slate-500 mt-1 leading-tight">
+                  Default: <span className="font-mono font-bold text-primary-600 dark:text-primary-400">{watchedNim || suggestedNim ? `${(watchedNim || suggestedNim).toLowerCase()}@student.stmikbandung.ac.id` : 'nim@student.stmikbandung.ac.id'}</span> (Boleh dikosongkan untuk memakai default).
+                </p>
+              )}
+            </div>
           </div>
 
           {!selectedUser && (
-            <Input
-              label="Password Akun"
-              type="password"
-              placeholder="Minimal 6 karakter..."
-              error={errors.password?.message}
-              {...register('password', { required: 'Password wajib diisi' })}
-            />
+            <div>
+              <Input
+                label={`Password Akun (Default: ${watchedRole === 'Mahasiswa' ? 'Mahasiswa123' : (watchedRole === 'Dosen' ? 'Dosen123' : 'Admin123')})`}
+                type="password"
+                placeholder={`Kosongkan untuk default: ${watchedRole === 'Mahasiswa' ? 'Mahasiswa123' : (watchedRole === 'Dosen' ? 'Dosen123' : 'Admin123')}`}
+                error={errors.password?.message}
+                {...register('password', { required: false })}
+              />
+              <p className="text-[10px] text-slate-500 mt-1">
+                Password default: <span className="font-semibold text-slate-700 dark:text-slate-300">{watchedRole === 'Mahasiswa' ? 'Mahasiswa123' : (watchedRole === 'Dosen' ? 'Dosen123' : 'Admin123')}</span>. Kosongkan jika ingin memakai password default.
+              </p>
+            </div>
           )}
 
           {/* Kondisi 1: Jika Role Mahasiswa -> Munculkan Field NIM, Prodi, Angkatan, & Dosen Wali */}
@@ -377,28 +474,79 @@ export const UserManagementPage = () => {
             <div className="p-3.5 rounded-2xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 space-y-3 animate-fadeIn">
               <div className="flex items-center gap-1.5 text-xs font-bold text-blue-700 dark:text-blue-300">
                 <GraduationCap className="w-4 h-4" />
-                <span>Identitas Akademik & Penetapan Dosen Wali</span>
+                <span>Identitas Akademik Mahasiswa</span>
               </div>
+              
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <Input
-                  label="NIM"
-                  placeholder="Contoh: 3200021"
-                  error={errors.nim?.message}
-                  {...register('nim', { required: watchedRole === 'Mahasiswa' ? 'NIM wajib diisi' : false })}
+                <Select
+                  label="Jenis Kelamin"
+                  options={[
+                    { value: 'Laki-laki', label: 'Laki-laki' },
+                    { value: 'Perempuan', label: 'Perempuan' },
+                  ]}
+                  {...register('jenis_kelamin')}
                 />
                 <Select
                   label="Program Studi"
                   options={[
-                    { value: 'Teknik Informatika', label: 'Teknik Informatika' },
-                    { value: 'Sistem Informasi', label: 'Sistem Informasi' },
+                    { value: 'Teknik Informatika', label: 'Teknik Informatika (Prefix: 12)' },
+                    { value: 'Sistem Informasi', label: 'Sistem Informasi (Prefix: 32)' },
                   ]}
                   {...register('prodi')}
                 />
                 <Input
                   label="Tahun Angkatan"
-                  placeholder="2024"
+                  placeholder="2026"
                   {...register('angkatan')}
                 />
+              </div>
+
+              {/* NIM Auto-Sequential STMIK Bandung */}
+              <div className="space-y-1 p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-blue-100 dark:border-blue-900/60">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-semibold text-blue-900 dark:text-blue-200 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                    <span>NIM Mahasiswa</span>
+                  </label>
+                  {!selectedUser && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !isCustomNim;
+                        setIsCustomNim(next);
+                        if (!next && suggestedNim) {
+                          setValue('nim', suggestedNim);
+                        }
+                      }}
+                      className="text-[10px] font-bold text-primary-600 hover:text-primary-700 dark:text-primary-400 underline cursor-pointer"
+                    >
+                      {isCustomNim ? 'Gunakan NIM Otomatis' : 'Ketik NIM Manual'}
+                    </button>
+                  )}
+                </div>
+
+                {!isCustomNim && !selectedUser ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={suggestedNim || 'Membuat NIM...'}
+                      className="w-full px-3 py-1.5 rounded-xl border border-primary-300 dark:border-primary-700 bg-white dark:bg-slate-900 font-mono font-bold text-xs text-primary-600 dark:text-primary-300 cursor-not-allowed"
+                    />
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 whitespace-nowrap">
+                      Otomatis
+                    </span>
+                  </div>
+                ) : (
+                  <Input
+                    placeholder={`Contoh: ${(watchedProdi || '').includes('Informatika') ? '12' : '32'}${(watchedAngkatan || '').slice(-2) || '26'}001`}
+                    error={errors.nim?.message}
+                    {...register('nim', { required: watchedRole === 'Mahasiswa' ? 'NIM wajib diisi' : false })}
+                  />
+                )}
+                <p className="text-[10px] text-slate-500">
+                  Format: {(watchedProdi || '').includes('Informatika') ? 'IF (12)' : 'SI (32)'} + Thn ({(watchedAngkatan || '').slice(-2) || '26'}) + Urutan (001 s/d 010, 099, 100) &rarr; <strong className="font-mono text-primary-600">{suggestedNim || `${(watchedProdi || '').includes('Informatika') ? '12' : '32'}${(watchedAngkatan || '').slice(-2) || '26'}001`}</strong>
+                </p>
               </div>
 
               {/* Dropdown Langsung Pilih Dosen Wali */}
@@ -421,7 +569,7 @@ export const UserManagementPage = () => {
                   })}
                 </select>
                 <p className="text-[10px] text-slate-500">
-                  💡 Mahasiswa ini akan langsung masuk ke daftar bimbingan dosen yang dipilih.
+                  Mahasiswa ini akan langsung masuk ke daftar bimbingan dosen yang dipilih.
                 </p>
               </div>
             </div>
@@ -434,15 +582,23 @@ export const UserManagementPage = () => {
                 <Users className="w-4 h-4" />
                 <span>Identitas Akademik Dosen Wali</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Select
+                  label="Jenis Kelamin"
+                  options={[
+                    { value: 'Laki-laki', label: 'Laki-laki' },
+                    { value: 'Perempuan', label: 'Perempuan' },
+                  ]}
+                  {...register('jenis_kelamin')}
+                />
                 <Input
-                  label="NIDN (Nomor Induk Dosen Nasional)"
+                  label="NIDN Dosen"
                   placeholder="Contoh: 0412345678"
                   error={errors.nidn?.message}
                   {...register('nidn', { required: watchedRole === 'Dosen' ? 'NIDN wajib diisi' : false })}
                 />
                 <Input
-                  label="Gelar Akademik (Opsional)"
+                  label="Gelar Akademik"
                   placeholder="Contoh: M.T. / M.Kom"
                   {...register('gelar')}
                 />

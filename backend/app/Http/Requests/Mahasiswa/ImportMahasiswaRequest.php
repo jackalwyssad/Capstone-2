@@ -19,8 +19,13 @@ class ImportMahasiswaRequest extends FormRequest
     {
         return [
             'data' => ['required', 'array', 'min:1'],
-            'data.*.nim' => ['required', 'string'],
             'data.*.nama_lengkap' => ['required', 'string'],
+            'data.*.nim' => ['nullable', 'string'],
+            'data.*.jenis_kelamin' => ['nullable', 'string'],
+            'data.*.prodi' => ['nullable', 'string'],
+            'data.*.angkatan' => ['nullable', 'string'],
+            'data.*.ipk_terakhir' => ['nullable', 'numeric'],
+            'data.*.sks_lulus' => ['nullable', 'integer'],
         ];
     }
 

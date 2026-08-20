@@ -23,6 +23,7 @@ class UpdateMahasiswaRequest extends FormRequest
         return [
             'nim' => ['required', 'string', 'max:20', 'unique:mahasiswa,nim,'.$mhsId],
             'nama_lengkap' => ['required', 'string', 'max:255'],
+            'jenis_kelamin' => ['nullable', 'in:Laki-laki,Perempuan'],
             'prodi' => ['required', 'in:Teknik Informatika,Sistem Informasi'],
             'angkatan' => ['required', 'string', 'max:10'],
             'dosen_wali_id' => ['nullable', 'exists:dosen,id'],

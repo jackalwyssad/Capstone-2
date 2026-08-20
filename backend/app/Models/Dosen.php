@@ -23,6 +23,7 @@ class Dosen extends Model
         'user_id',
         'nidn',
         'nama_lengkap',
+        'jenis_kelamin',
         'gelar',
         'email',
         'no_hp',

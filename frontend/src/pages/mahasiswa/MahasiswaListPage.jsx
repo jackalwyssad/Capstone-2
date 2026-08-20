@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { mahasiswaService } from '../../services/mahasiswaService';
 import { dosenService } from '../../services/dosenService';
@@ -9,12 +9,13 @@ import { Select } from '../../components/common/Select';
 import { Modal } from '../../components/common/Modal';
 import { Card } from '../../components/common/Card';
 import { Skeleton } from '../../components/common/Skeleton';
+import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
-import { exportToExcel, exportToPDF } from '../../utils/exportHelpers';
+import { exportToExcel, exportToPDF, readExcelFile, downloadMahasiswaExcelTemplate } from '../../utils/exportHelpers';
 import { toast } from 'sonner';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import {
   Search,
   Plus,
@@ -27,6 +28,7 @@ import {
   Copy,
   Download,
   Info,
+  Sparkles,
 } from 'lucide-react';
 
 const MySwal = withReactContent(Swal);
@@ -45,7 +47,19 @@ export const MahasiswaListPage = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedMhs, setSelectedMhs] = useState(null);
+  
+  // Import File Excel & JSON States
+  const [activeImportTab, setActiveImportTab] = useState('excel');
+  const [excelFile, setExcelFile] = useState(null);
+  const [excelParsedData, setExcelParsedData] = useState([]);
+  const [isReadingExcel, setIsReadingExcel] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [importJsonText, setImportJsonText] = useState('');
+  const excelInputRef = React.useRef(null);
+
+  // Auto-NIM Generator States
+  const [suggestedNim, setSuggestedNim] = useState('');
+  const [isCustomNim, setIsCustomNim] = useState(false);
 
   // Fetch Data Mahasiswa (TanStack Query)
   const { data: mhsResponse, isLoading } = useQuery({
@@ -67,15 +81,50 @@ export const MahasiswaListPage = () => {
   }));
 
   // Form handling
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
+  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm();
+
+  const watchedProdi = useWatch({ control, name: 'prodi', defaultValue: 'Teknik Informatika' });
+  const watchedAngkatan = useWatch({ control, name: 'angkatan', defaultValue: new Date().getFullYear().toString() });
+  const watchedNim = useWatch({ control, name: 'nim', defaultValue: '' });
+
+  // Generate NIM Otomatis saat modal tambah terbuka atau Prodi & Angkatan berubah
+  useEffect(() => {
+    if (!isFormModalOpen || selectedMhs) return;
+
+    const prodi = watchedProdi || 'Teknik Informatika';
+    const angkatan = watchedAngkatan || new Date().getFullYear().toString();
+
+    mahasiswaService.generateNim(prodi, angkatan)
+      .then((res) => {
+        if (res.success && res.data?.nim) {
+          setSuggestedNim(res.data.nim);
+          if (!isCustomNim) {
+            setValue('nim', res.data.nim);
+          }
+        }
+      })
+      .catch(() => {
+        const isIF = prodi.toLowerCase().includes('informatika');
+        const prefix = isIF ? '12' : '32';
+        const year2Digit = angkatan.replace(/\D/g, '').slice(-2) || String(new Date().getFullYear()).slice(-2);
+        const fallbackNim = `${prefix}${year2Digit}001`;
+        setSuggestedNim(fallbackNim);
+        if (!isCustomNim) {
+          setValue('nim', fallbackNim);
+        }
+      });
+  }, [watchedProdi, watchedAngkatan, isFormModalOpen, selectedMhs, isCustomNim, setValue]);
 
   const openCreateModal = () => {
     setSelectedMhs(null);
+    setIsCustomNim(false);
+    const currentYear = new Date().getFullYear().toString();
     reset({
       nim: '',
       nama_lengkap: '',
+      jenis_kelamin: 'Laki-laki',
       prodi: 'Teknik Informatika',
-      angkatan: new Date().getFullYear().toString(),
+      angkatan: currentYear,
       dosen_wali_id: '',
       ipk_terakhir: '0.00',
       sks_lulus: '0',
@@ -86,8 +135,10 @@ export const MahasiswaListPage = () => {
 
   const openEditModal = (mhs) => {
     setSelectedMhs(mhs);
+    setIsCustomNim(true);
     setValue('nim', mhs.nim);
     setValue('nama_lengkap', mhs.nama_lengkap);
+    setValue('jenis_kelamin', mhs.jenis_kelamin || 'Laki-laki');
     setValue('prodi', mhs.prodi);
     setValue('angkatan', mhs.angkatan);
     setValue('dosen_wali_id', mhs.dosen_wali_id || '');
@@ -105,9 +156,13 @@ export const MahasiswaListPage = () => {
       }
       return mahasiswaService.createMahasiswa(formData);
     },
-    onSuccess: () => {
-      toast.success(selectedMhs ? 'Data Mahasiswa berhasil diperbarui.' : 'Data Mahasiswa berhasil ditambahkan.');
-      queryClient.invalidateQueries(['mahasiswa']);
+    onSuccess: async () => {
+      toast.success(selectedMhs ? 'Data Mahasiswa berhasil diperbarui.' : 'Data Mahasiswa & Akun Login berhasil dibuat!');
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['mahasiswa'] }),
+        queryClient.invalidateQueries({ queryKey: ['users'] }),
+        queryClient.refetchQueries({ queryKey: ['mahasiswa'] }),
+      ]);
       setIsFormModalOpen(false);
     },
     onError: (err) => {
@@ -122,9 +177,13 @@ export const MahasiswaListPage = () => {
   // Mutation Delete
   const deleteMutation = useMutation({
     mutationFn: (id) => mahasiswaService.deleteMahasiswa(id),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Data Mahasiswa berhasil dihapus.');
-      queryClient.invalidateQueries(['mahasiswa']);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['mahasiswa'] }),
+        queryClient.invalidateQueries({ queryKey: ['users'] }),
+        queryClient.refetchQueries({ queryKey: ['mahasiswa'] }),
+      ]);
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || 'Gagal menghapus data.');
@@ -174,21 +233,83 @@ export const MahasiswaListPage = () => {
     });
   };
 
-  // Import Action
-  const handleImportSubmit = async () => {
+  // Handle pemilihan file Excel dari komputer
+  const handleExcelFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validExtensions = ['.xlsx', '.xls', '.csv'];
+    const hasValidExt = validExtensions.some((ext) => file.name.toLowerCase().endsWith(ext));
+    if (!hasValidExt) {
+      toast.error('Format file tidak didukung. Harap pilih file dengan ekstensi .xlsx, .xls, atau .csv');
+      return;
+    }
+
+    setExcelFile(file);
+    setIsReadingExcel(true);
     try {
-      const parsed = JSON.parse(importJsonText);
-      if (!Array.isArray(parsed)) {
-        toast.error('Data import harus berupa JSON Array [ { ... } ]');
+      const parsed = await readExcelFile(file);
+      if (!parsed || parsed.length === 0) {
+        toast.warning('Tidak ada baris data mahasiswa yang valid ditemukan di file Excel.');
+        setExcelParsedData([]);
+      } else {
+        setExcelParsedData(parsed);
+        toast.success(`Berhasil membaca ${parsed.length} baris data dari file ${file.name}`);
+      }
+    } catch (err) {
+      toast.error('Gagal membaca file Excel. Pastikan format file tidak korup/rusak.');
+      setExcelParsedData([]);
+    } finally {
+      setIsReadingExcel(false);
+    }
+  };
+
+  const handleResetExcel = () => {
+    setExcelFile(null);
+    setExcelParsedData([]);
+    if (excelInputRef.current) {
+      excelInputRef.current.value = '';
+    }
+  };
+
+  // Import Action dengan Proteksi Keamanan Data & Auto-NIM Generator
+  const handleProcessImport = async () => {
+    let payload = [];
+    if (activeImportTab === 'excel') {
+      if (!excelParsedData || excelParsedData.length === 0) {
+        toast.error('Harap pilih file Excel yang memiliki data mahasiswa terlebih dahulu.');
         return;
       }
-      const res = await mahasiswaService.importMahasiswa({ data: parsed });
-      toast.success(res.message || 'Data mahasiswa berhasil diimpor.');
-      queryClient.invalidateQueries(['mahasiswa']);
+      payload = excelParsedData;
+    } else {
+      try {
+        const parsed = JSON.parse(importJsonText);
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+          toast.error('Data import harus berupa JSON Array [ { ... } ] dan tidak boleh kosong.');
+          return;
+        }
+        payload = parsed;
+      } catch (err) {
+        toast.error('Format data JSON tidak valid. Pastikan format JSON array sudah benar.');
+        return;
+      }
+    }
+
+    setIsImporting(true);
+    try {
+      const res = await mahasiswaService.importMahasiswa({ data: payload });
+      toast.success(res.message || 'Data mahasiswa berhasil diproses.');
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['mahasiswa'] }),
+        queryClient.refetchQueries({ queryKey: ['mahasiswa'] }),
+      ]);
       setIsImportModalOpen(false);
+      handleResetExcel();
       setImportJsonText('');
     } catch (err) {
-      toast.error('Format data JSON tidak valid. Pastikan format JSON array sudah benar.');
+      toast.error(err.response?.data?.message || 'Gagal memproses impor data.');
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -196,19 +317,20 @@ export const MahasiswaListPage = () => {
     const template = JSON.stringify(
       [
         {
-          nim: '3200021',
-          nama_lengkap: 'Siti Nurhaliza',
+          nama_lengkap: 'Rahmat Hidayat',
+          jenis_kelamin: 'Laki-laki',
           prodi: 'Teknik Informatika',
-          angkatan: '2023',
+          angkatan: '2026',
           ipk_terakhir: 3.65,
           sks_lulus: 48,
         },
         {
-          nim: '3200022',
-          nama_lengkap: 'Muhammad Rizki',
+          nim: '3226001',
+          nama_lengkap: 'Siti Nurhaliza',
+          jenis_kelamin: 'Perempuan',
           prodi: 'Sistem Informasi',
-          angkatan: '2023',
-          ipk_terakhir: 3.45,
+          angkatan: '2026',
+          ipk_terakhir: 3.75,
           sks_lulus: 48,
         },
       ],
@@ -226,10 +348,11 @@ export const MahasiswaListPage = () => {
       const allDataRes = await mahasiswaService.getMahasiswa({ per_page: 1000, prodi: prodiFilter, search });
       const allMhs = allDataRes?.data || mhsList;
       const rows = [
-        ['NIM', 'Nama Mahasiswa', 'Program Studi', 'Angkatan', 'Dosen Wali', 'IPK Terakhir', 'SKS Lulus'],
+        ['NIM', 'Nama Mahasiswa', 'Jenis Kelamin', 'Program Studi', 'Angkatan', 'Dosen Wali', 'IPK Terakhir', 'SKS Lulus'],
         ...allMhs.map((m) => [
           m.nim,
           m.nama_lengkap,
+          m.jenis_kelamin || 'Laki-laki',
           m.prodi,
           m.angkatan,
           m.dosen_wali?.nama_lengkap || 'Belum Ditetapkan',
@@ -250,11 +373,12 @@ export const MahasiswaListPage = () => {
       toast.info('Menyiapkan file PDF data mahasiswa...');
       const allDataRes = await mahasiswaService.getMahasiswa({ per_page: 1000, prodi: prodiFilter, search });
       const allMhs = allDataRes?.data || mhsList;
-      const headers = ['No', 'NIM', 'Nama Mahasiswa', 'Program Studi', 'Angkatan', 'Dosen Pembimbing Akademik', 'IPK', 'SKS'];
+      const headers = ['No', 'NIM', 'Nama Mahasiswa', 'Jenis Kelamin', 'Program Studi', 'Angkatan', 'Dosen Pembimbing Akademik', 'IPK', 'SKS'];
       const rows = allMhs.map((m, idx) => [
         idx + 1,
         m.nim,
         m.nama_lengkap,
+        m.jenis_kelamin || 'Laki-laki',
         m.prodi,
         m.angkatan,
         m.dosen_wali?.nama_lengkap || 'Belum Ada',
@@ -282,7 +406,7 @@ export const MahasiswaListPage = () => {
               Export PDF
             </Button>
             <Button variant="secondary" size="sm" icon={Upload} onClick={() => setIsImportModalOpen(true)}>
-              Import Data
+              Import Excel/JSON
             </Button>
             <Button size="sm" icon={Plus} onClick={openCreateModal}>
               Tambah Mahasiswa
@@ -291,10 +415,10 @@ export const MahasiswaListPage = () => {
         }
       />
 
-      {/* Filter & Searching Bar */}
+      {/* Filter & Search Bar */}
       <Card hover={false} className="mb-6">
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-          <div className="w-full sm:w-80">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
             <Input
               icon={Search}
               placeholder="Cari berdasarkan NIM atau Nama..."
@@ -326,11 +450,7 @@ export const MahasiswaListPage = () => {
       {/* Table Data Mahasiswa */}
       <Card hover={false}>
         {isLoading ? (
-          <div className="space-y-3 p-4">
-            <Skeleton className="h-10" />
-            <Skeleton className="h-10" />
-            <Skeleton className="h-10" />
-          </div>
+          <LoadingSpinner text="Memuat data mahasiswa STMIK Bandung..." fullHeight />
         ) : mhsList.length === 0 ? (
           <EmptyState
             title="Data Mahasiswa Kosong"
@@ -349,6 +469,7 @@ export const MahasiswaListPage = () => {
                   <tr>
                     <th className="p-3">Foto & Mahasiswa</th>
                     <th className="p-3">NIM</th>
+                    <th className="p-3">Jenis Kelamin</th>
                     <th className="p-3">Program Studi</th>
                     <th className="p-3">Angkatan</th>
                     <th className="p-3">Dosen Wali</th>
@@ -374,6 +495,15 @@ export const MahasiswaListPage = () => {
                         </div>
                       </td>
                       <td className="p-3 font-semibold text-primary-600 dark:text-primary-400">{mhs.nim}</td>
+                      <td className="p-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          mhs.jenis_kelamin === 'Perempuan'
+                            ? 'bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800/60'
+                            : 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60'
+                        }`}>
+                          {mhs.jenis_kelamin === 'Perempuan' ? 'Perempuan' : 'Laki-laki'}
+                        </span>
+                      </td>
                       <td className="p-3">
                         <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
                           {mhs.prodi}
@@ -412,30 +542,32 @@ export const MahasiswaListPage = () => {
               </table>
             </div>
 
-            {/* Pagination controls */}
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 text-xs">
-              <span className="text-slate-500">
-                Menampilkan Halaman <strong>{meta.current_page || 1}</strong> dari <strong>{meta.last_page || 1}</strong> (Total {meta.total || 0} Mahasiswa)
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                >
-                  Sebelumnya
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page >= (meta.last_page || 1)}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Selanjutnya
-                </Button>
+            {/* Pagination Controls */}
+            {meta.last_page > 1 && (
+              <div className="flex items-center justify-between p-4 border-t border-slate-200 dark:border-slate-800">
+                <p className="text-xs text-slate-500">
+                  Menampilkan {mhsList.length} dari {meta.total} mahasiswa (Halaman {meta.current_page} dari {meta.last_page})
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={page <= 1}
+                    onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                  >
+                    Sebelumnya
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={page >= meta.last_page}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
+                    Berikutnya
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </Card>
@@ -447,20 +579,85 @@ export const MahasiswaListPage = () => {
         title={selectedMhs ? 'Edit Data Mahasiswa' : 'Tambah Mahasiswa Baru'}
       >
         <form onSubmit={handleSubmit((data) => saveMutation.mutate(data))} className="space-y-4">
-          <Input label="NIM Mahasiswa" placeholder="3200021" error={errors.nim?.message} {...register('nim', { required: 'NIM wajib diisi' })} />
-          <Input label="Nama Lengkap" placeholder="Nama Mahasiswa Lengkap" error={errors.nama_lengkap?.message} {...register('nama_lengkap', { required: 'Nama wajib diisi' })} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Nama Lengkap"
+              placeholder="Nama Mahasiswa Lengkap"
+              error={errors.nama_lengkap?.message}
+              {...register('nama_lengkap', { required: 'Nama wajib diisi' })}
+            />
+            <Select
+              label="Jenis Kelamin"
+              options={[
+                { value: 'Laki-laki', label: 'Laki-laki' },
+                { value: 'Perempuan', label: 'Perempuan' },
+              ]}
+              {...register('jenis_kelamin')}
+            />
+          </div>
           
           {/* Program Studi strictly 2 options */}
           <Select
-            label="Program Studi (Hanya 2 Program Studi)"
+            label="Program Studi"
             options={[
-              { value: 'Teknik Informatika', label: 'Teknik Informatika' },
-              { value: 'Sistem Informasi', label: 'Sistem Informasi' },
+              { value: 'Teknik Informatika', label: 'Teknik Informatika (Prefix: 12)' },
+              { value: 'Sistem Informasi', label: 'Sistem Informasi (Prefix: 32)' },
             ]}
             {...register('prodi', { required: 'Program studi wajib dipilih' })}
           />
 
-          <Input label="Tahun Angkatan" placeholder="2023" {...register('angkatan')} />
+          <Input label="Tahun Angkatan" placeholder="2026" {...register('angkatan', { required: 'Tahun angkatan wajib diisi' })} />
+
+          {/* NIM Section with Auto-Sequential Format STMIK Bandung */}
+          <div className="space-y-1.5 p-3 rounded-2xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold tracking-wide text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span>Nomor Induk Mahasiswa (NIM)</span>
+              </label>
+              {!selectedMhs && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !isCustomNim;
+                    setIsCustomNim(next);
+                    if (!next && suggestedNim) {
+                      setValue('nim', suggestedNim);
+                    }
+                  }}
+                  className="text-[11px] font-bold text-primary-600 hover:text-primary-700 dark:text-primary-400 underline cursor-pointer"
+                >
+                  {isCustomNim ? 'Gunakan NIM Otomatis' : 'Ketik NIM Manual'}
+                </button>
+              )}
+            </div>
+
+            {!isCustomNim && !selectedMhs ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={suggestedNim || 'Membuat NIM...'}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-primary-300 dark:border-primary-700 bg-white dark:bg-slate-900 font-mono font-bold text-sm text-primary-600 dark:text-primary-300 cursor-not-allowed"
+                />
+                <span className="text-[11px] font-bold px-2.5 py-1.5 rounded-xl bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 whitespace-nowrap">
+                  Otomatis
+                </span>
+              </div>
+            ) : (
+              <Input
+                placeholder={`Contoh: ${(watchedProdi || '').includes('Informatika') ? '12' : '32'}${(watchedAngkatan || '').slice(-2) || '26'}001`}
+                error={errors.nim?.message}
+                {...register('nim', { required: 'NIM wajib diisi' })}
+              />
+            )}
+
+            <p className="text-[10px] text-blue-700/80 dark:text-blue-300/80 leading-relaxed">
+              <strong>Format STMIK:</strong>{' '}
+              {(watchedProdi || '').includes('Informatika') ? 'Teknik Informatika (12)' : 'Sistem Informasi (32)'} + Tahun Masuk ({(watchedAngkatan || '').slice(-2) || '26'}) + Nomor Urut (001 s/d 010, 099, 100) &rarr;{' '}
+              <strong className="text-primary-700 dark:text-primary-300 font-mono">{suggestedNim || `${(watchedProdi || '').includes('Informatika') ? '12' : '32'}${(watchedAngkatan || '').slice(-2) || '26'}001`}</strong>
+            </p>
+          </div>
           <Select label="Dosen Wali Pembimbing" options={dosenOptions} placeholder="Pilih Dosen Wali..." {...register('dosen_wali_id')} />
           
           <div className="grid grid-cols-2 gap-4">
@@ -469,6 +666,18 @@ export const MahasiswaListPage = () => {
           </div>
 
           <Input label="URL Foto / Avatar (Opsional)" placeholder="https://..." {...register('foto')} />
+
+          {!selectedMhs && (
+            <div className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-200 flex items-start gap-2.5">
+              <Sparkles className="w-4 h-4 flex-shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
+              <div>
+                <p className="font-bold">Akun Login Pengguna Dibuat Otomatis</p>
+                <p className="text-[11px] text-emerald-700 dark:text-emerald-300 mt-0.5">
+                  Sistem otomatis membuat akun login dengan Email: <code className="font-mono font-bold bg-white/70 dark:bg-slate-900/60 px-1 py-0.5 rounded">{watchedNim || suggestedNim ? `${(watchedNim || suggestedNim).toLowerCase()}@student.stmikbandung.ac.id` : '[nim]@student.stmikbandung.ac.id'}</code> dan Password: <code className="font-mono font-bold bg-white/70 dark:bg-slate-900/60 px-1 py-0.5 rounded">Mahasiswa123</code>.
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => setIsFormModalOpen(false)}>
@@ -481,46 +690,230 @@ export const MahasiswaListPage = () => {
         </form>
       </Modal>
 
-      {/* Modal Import Data Excel/JSON with Template Helper */}
+      {/* Modal Import Data Excel/JSON with Template Helper & Preview */}
       <Modal
         isOpen={isImportModalOpen}
-        onClose={() => setIsImportModalOpen(false)}
+        onClose={() => {
+          setIsImportModalOpen(false);
+          handleResetExcel();
+        }}
         title="Import Data Mahasiswa Massal"
-        maxWidth="max-w-2xl"
+        maxWidth="max-w-3xl"
       >
         <div className="space-y-4">
-          <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 text-xs text-blue-900 dark:text-blue-200 flex items-start gap-2.5">
-            <Info className="w-5 h-5 flex-shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" />
-            <div>
-              <p className="font-bold">Apakah Impor Data Harus Menggunakan Template?</p>
-              <p className="mt-0.5 text-blue-800 dark:text-blue-300">
-                <strong>Ya</strong>, agar sistem dapat membaca data dan membuat akun user secara otomatis, format harus memiliki field standar: <code>nim</code>, <code>nama_lengkap</code>, <code>prodi</code> ("Teknik Informatika" / "Sistem Informasi"), dan <code>angkatan</code>.
-              </p>
+          {/* Informasi Proteksi Keamanan */}
+          <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 text-xs text-blue-900 dark:text-blue-200 space-y-1.5">
+            <div className="flex items-center gap-2 font-bold text-blue-900 dark:text-blue-100">
+              <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+              <span>Ketentuan & Proteksi Keamanan Impor Data</span>
             </div>
+            <ul className="list-disc list-inside space-y-1 text-[11px] text-blue-800 dark:text-blue-300 leading-relaxed">
+              <li>
+                <strong>NIM Bersifat Opsional:</strong> Jika kolom NIM kosong, sistem otomatis membuatkan NIM baru berurutan sesuai format standar STMIK (IF = 12, SI = 32).
+              </li>
+              <li>
+                <strong>Proteksi Kesalahan Ketik NIM:</strong> Jika NIM yang diimpor sudah terdaftar atas nama orang lain, sistem <strong>tidak akan menimpa</strong> data tersebut (baris dilewati demi keamanan).
+              </li>
+              <li>
+                <strong>Akun Login Otomatis:</strong> Mahasiswa baru yang berhasil diimpor langsung dibuatkan akun login dengan default password <code>Mahasiswa123</code>.
+              </li>
+            </ul>
           </div>
 
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Contoh Format Template JSON:
-            </span>
-            <Button size="sm" variant="outline" icon={Copy} onClick={copyTemplateJson}>
-              Salin Template JSON
-            </Button>
+          {/* Tab Pilihan Metode Impor: File Excel atau JSON */}
+          <div className="flex border-b border-slate-200 dark:border-slate-800 gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveImportTab('excel')}
+              className={`pb-2.5 px-3 text-xs font-bold transition-all border-b-2 flex items-center gap-2 cursor-pointer ${
+                activeImportTab === 'excel'
+                  ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              }`}
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Unggah File Excel (.xlsx / .csv)
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveImportTab('json')}
+              className={`pb-2.5 px-3 text-xs font-bold transition-all border-b-2 flex items-center gap-2 cursor-pointer ${
+                activeImportTab === 'json'
+                  ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              Format JSON Array
+            </button>
           </div>
 
-          <textarea
-            rows={7}
-            className="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-800 p-3 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-            placeholder={`[\n  {\n    "nim": "3200021",\n    "nama_lengkap": "Siti Nurhaliza",\n    "prodi": "Teknik Informatika",\n    "angkatan": "2023",\n    "ipk_terakhir": 3.65,\n    "sks_lulus": 48\n  }\n]`}
-            value={importJsonText}
-            onChange={(e) => setImportJsonText(e.target.value)}
-          />
+          {/* TAB 1: UNGGAH FILE EXCEL */}
+          {activeImportTab === 'excel' && (
+            <div className="space-y-4 animate-fadeIn">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Pilih atau Tarik File Excel ke area di bawah:
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  icon={Download}
+                  onClick={downloadMahasiswaExcelTemplate}
+                  className="text-xs text-primary-600 dark:text-primary-400 border-primary-300"
+                >
+                  Unduh Template Excel (.xlsx)
+                </Button>
+              </div>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsImportModalOpen(false)}>
+              {/* Area Upload File */}
+              <div
+                onClick={() => excelInputRef.current?.click()}
+                className={`p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-colors ${
+                  excelFile
+                    ? 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20'
+                    : 'border-slate-300 dark:border-slate-700 hover:border-primary-500 bg-slate-50/50 dark:bg-slate-900/50'
+                }`}
+              >
+                <input
+                  type="file"
+                  ref={excelInputRef}
+                  onChange={handleExcelFileChange}
+                  accept=".xlsx, .xls, .csv"
+                  className="hidden"
+                />
+
+                {isReadingExcel ? (
+                  <div className="flex flex-col items-center justify-center py-2">
+                    <LoadingSpinner text="Membaca dan memproses file Excel..." />
+                  </div>
+                ) : excelFile ? (
+                  <div className="flex flex-col items-center justify-center gap-1.5">
+                    <FileSpreadsheet className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                    <p className="font-bold text-xs text-slate-900 dark:text-slate-100">
+                      File Dipilih: {excelFile.name} ({(excelFile.size / 1024).toFixed(1)} KB)
+                    </p>
+                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                      {excelParsedData.length} baris data mahasiswa siap diproses
+                    </p>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleResetExcel();
+                      }}
+                      className="mt-1 text-[10px] font-bold text-rose-600 hover:underline cursor-pointer"
+                    >
+                      Ganti File Lain
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-1.5 text-slate-500">
+                    <Upload className="w-8 h-8 text-primary-500 mb-1" />
+                    <p className="font-bold text-xs text-slate-800 dark:text-slate-200">
+                      Klik untuk memilih file Excel dari perangkat Anda
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      Mendukung format file: <code>.xlsx</code>, <code>.xls</code>, atau <code>.csv</code>
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Preview Tabel Hasil Pembacaan Excel */}
+              {excelParsedData.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                      Preview Data Excel ({excelParsedData.length} Mahasiswa):
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      Hanya menampilkan hingga 5 baris awal preview
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 max-h-48">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold sticky top-0">
+                        <tr>
+                          <th className="p-2">No</th>
+                          <th className="p-2">Nama Lengkap</th>
+                          <th className="p-2">Jenis Kelamin</th>
+                          <th className="p-2">Program Studi</th>
+                          <th className="p-2">Angkatan</th>
+                          <th className="p-2">NIM</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                        {excelParsedData.slice(0, 5).map((row, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                            <td className="p-2 text-slate-400">{idx + 1}</td>
+                            <td className="p-2 font-bold text-slate-900 dark:text-slate-100">{row.nama_lengkap}</td>
+                            <td className="p-2">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                {row.jenis_kelamin || 'Laki-laki'}
+                              </span>
+                            </td>
+                            <td className="p-2 text-slate-700 dark:text-slate-300">{row.prodi}</td>
+                            <td className="p-2 text-slate-600 dark:text-slate-400">{row.angkatan}</td>
+                            <td className="p-2 font-mono">
+                              {row.nim ? (
+                                <span className="font-bold text-primary-600 dark:text-primary-400">{row.nim}</span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                                  Otomatis STMIK
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 2: TEMPEL JSON ARRAY */}
+          {activeImportTab === 'json' && (
+            <div className="space-y-3 animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Format Data JSON (Array):
+                </span>
+                <Button size="sm" variant="outline" icon={Copy} onClick={copyTemplateJson}>
+                  Salin Format Template
+                </Button>
+              </div>
+
+              <textarea
+                rows={8}
+                className="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-800 p-3 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                placeholder={`[\n  {\n    "nama_lengkap": "Rahmat Hidayat",\n    "jenis_kelamin": "Laki-laki",\n    "prodi": "Teknik Informatika",\n    "angkatan": "2026",\n    "ipk_terakhir": 3.65,\n    "sks_lulus": 48\n  },\n  {\n    "nim": "3226001",\n    "nama_lengkap": "Siti Nurhaliza",\n    "jenis_kelamin": "Perempuan",\n    "prodi": "Sistem Informasi",\n    "angkatan": "2026"\n  }\n]`}
+                value={importJsonText}
+                onChange={(e) => setImportJsonText(e.target.value)}
+              />
+            </div>
+          )}
+
+          {/* Modal Footer Actions */}
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsImportModalOpen(false);
+                handleResetExcel();
+              }}
+            >
               Batal
             </Button>
-            <Button onClick={handleImportSubmit} icon={Upload}>
+            <Button
+              onClick={handleProcessImport}
+              icon={Upload}
+              isLoading={isImporting}
+              disabled={activeImportTab === 'excel' && excelParsedData.length === 0}
+            >
               Proses Impor Data
             </Button>
           </div>

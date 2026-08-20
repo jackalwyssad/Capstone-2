@@ -22,6 +22,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Relasi ke akun user
             $table->string('nim')->unique(); // Nomor Induk Mahasiswa STMIK Bandung (Unik)
             $table->string('nama_lengkap'); // Nama lengkap mahasiswa
+            $table->enum('jenis_kelamin', ['Laki-laki', 'Perempuan'])->default('Laki-laki'); // Jenis kelamin mahasiswa
             $table->enum('prodi', ['Teknik Informatika', 'Sistem Informasi']); // Program studi di STMIK Bandung
             $table->string('angkatan'); // Tahun angkatan (e.g. 2021, 2022, 2023, 2024, 2025)
             $table->foreignId('dosen_wali_id')->nullable()->constrained('dosen')->onDelete('set null'); // FK ke Dosen Wali

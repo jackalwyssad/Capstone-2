@@ -4,6 +4,7 @@ import { authService } from '../../services/authService';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card } from '../../components/common/Card';
 import { Input } from '../../components/common/Input';
+import { Select } from '../../components/common/Select';
 import { Button } from '../../components/common/Button';
 import { toast } from 'sonner';
 import {
@@ -28,7 +29,7 @@ import {
  * Fitur:
  * - Upload file foto profil langsung dari komputer lokal (disimpan di server storage lokal).
  * - Preview foto realtime sebelum diunggah.
- * - Informasi akun dan kartu "Profil Dosen Wali Anda" untuk Mahasiswa.
+ * - Informasi akun, jenis kelamin, dan kartu "Profil Dosen Wali Anda" untuk Mahasiswa.
  */
 export const ProfilePage = () => {
   const { user, setUser, hasRole } = useAuthStore();
@@ -37,6 +38,7 @@ export const ProfilePage = () => {
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phone_number || '');
+  const [jenisKelamin, setJenisKelamin] = useState(user?.mahasiswa?.jenis_kelamin || user?.dosen?.jenis_kelamin || 'Laki-laki');
   const [avatar, setAvatar] = useState(user?.avatar || user?.mahasiswa?.foto || user?.dosen?.foto || '');
 
   // Sinkronisasi data saat user di-store terupdate
@@ -45,6 +47,7 @@ export const ProfilePage = () => {
       setName(user.name || '');
       setEmail(user.email || '');
       setPhone(user.phone_number || '');
+      setJenisKelamin(user?.mahasiswa?.jenis_kelamin || user?.dosen?.jenis_kelamin || 'Laki-laki');
       setAvatar(user.avatar || user.mahasiswa?.foto || user.dosen?.foto || '');
     }
   }, [user]);
@@ -150,6 +153,7 @@ export const ProfilePage = () => {
         name,
         email,
         phone_number: phone,
+        jenis_kelamin: jenisKelamin,
         avatar: finalAvatar || user?.avatar || undefined,
       });
 
@@ -264,6 +268,9 @@ export const ProfilePage = () => {
             <span className="px-3 py-1 rounded-full text-[11px] font-black bg-primary-100 dark:bg-primary-950 text-primary-600 dark:text-primary-300 border border-primary-300 dark:border-primary-800">
               Role: {user?.roles?.[0] || 'User'}
             </span>
+            <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+              {user?.mahasiswa?.jenis_kelamin || user?.dosen?.jenis_kelamin || jenisKelamin}
+            </span>
             {user?.mahasiswa?.prodi && (
               <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200">
                 {user.mahasiswa.prodi}
@@ -278,11 +285,11 @@ export const ProfilePage = () => {
             Informasi Akun & Identitas
           </h3>
           <form onSubmit={handleUpdate} className="space-y-4">
-            {/* Field NIM / NIDN Terkunci */}
+            {/* Field Identitas Akademik Terkunci + Jenis Kelamin */}
             {hasRole('Mahasiswa') && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80">
                 <Input
-                  label="NIM (Nomor Induk Mahasiswa - Terkunci)"
+                  label="NIM (Terkunci)"
                   value={user?.mahasiswa?.nim || '-'}
                   readOnly
                   className="bg-slate-100 dark:bg-slate-800 font-mono font-bold text-slate-600 dark:text-slate-300 cursor-not-allowed"
@@ -293,13 +300,22 @@ export const ProfilePage = () => {
                   readOnly
                   className="bg-slate-100 dark:bg-slate-800 font-bold text-slate-600 dark:text-slate-300 cursor-not-allowed"
                 />
+                <Select
+                  label="Jenis Kelamin"
+                  value={jenisKelamin}
+                  onChange={(e) => setJenisKelamin(e.target.value)}
+                  options={[
+                    { value: 'Laki-laki', label: 'Laki-laki' },
+                    { value: 'Perempuan', label: 'Perempuan' },
+                  ]}
+                />
               </div>
             )}
 
             {hasRole('Dosen') && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80">
                 <Input
-                  label="NIDN (Nomor Induk Dosen Nasional - Terkunci)"
+                  label="NIDN (Terkunci)"
                   value={user?.dosen?.nidn || '-'}
                   readOnly
                   className="bg-slate-100 dark:bg-slate-800 font-mono font-bold text-slate-600 dark:text-slate-300 cursor-not-allowed"
@@ -310,12 +326,48 @@ export const ProfilePage = () => {
                   readOnly
                   className="bg-slate-100 dark:bg-slate-800 font-bold text-slate-600 dark:text-slate-300 cursor-not-allowed"
                 />
+                <Select
+                  label="Jenis Kelamin"
+                  value={jenisKelamin}
+                  onChange={(e) => setJenisKelamin(e.target.value)}
+                  options={[
+                    { value: 'Laki-laki', label: 'Laki-laki' },
+                    { value: 'Perempuan', label: 'Perempuan' },
+                  ]}
+                />
+              </div>
+            )}
+
+            {!hasRole('Mahasiswa') && !hasRole('Dosen') && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Select
+                  label="Jenis Kelamin"
+                  value={jenisKelamin}
+                  onChange={(e) => setJenisKelamin(e.target.value)}
+                  options={[
+                    { value: 'Laki-laki', label: 'Laki-laki' },
+                    { value: 'Perempuan', label: 'Perempuan' },
+                  ]}
+                />
               </div>
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input label="Nama Lengkap" icon={User} value={name} onChange={(e) => setName(e.target.value)} required />
-              <Input label="Email Official" type="email" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <div>
+                <Input
+                  label="Alamat Email (Akun Login & Notifikasi)"
+                  type="email"
+                  icon={Mail}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="email@anda.com"
+                  required
+                />
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Anda dapat menggunakan email kampus atau email pribadi (misal: @gmail.com).
+                </p>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -385,6 +437,14 @@ export const ProfilePage = () => {
                 </span>
                 <span className="font-bold text-slate-900 dark:text-slate-100">
                   {user.mahasiswa.dosen_wali.pendidikan_terakhir || '-'}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-800">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5" /> Jenis Kelamin
+                </span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  {user.mahasiswa.dosen_wali.jenis_kelamin || 'Laki-laki'}
                 </span>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-800">

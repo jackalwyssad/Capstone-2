@@ -11,6 +11,7 @@ import { Modal } from '../../components/common/Modal';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Skeleton } from '../../components/common/Skeleton';
+import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
 import { exportToExcel, exportToPDF } from '../../utils/exportHelpers';
 import { toast } from 'sonner';
@@ -99,7 +100,7 @@ export const PerwalianListPage = () => {
 
           if (startI < endJ && startJ < endI) {
             conflicts.push(
-              `⚠️ [${mkI.kode}] ${mkI.nama} bentrok dengan [${mkJ.kode}] ${mkJ.nama} pada hari ${mkI.hari} (${mkI.jam_mulai || mkI.mulai}–${mkI.jam_selesai || mkI.selesai} WIB)`
+              `[${mkI.kode}] ${mkI.nama} bentrok dengan [${mkJ.kode}] ${mkJ.nama} pada hari ${mkI.hari} (${mkI.jam_mulai || mkI.mulai}-${mkI.jam_selesai || mkI.selesai} WIB)`
             );
           }
         }
@@ -202,10 +203,13 @@ export const PerwalianListPage = () => {
       if (selectedPerwalian) return perwalianService.updatePerwalian(selectedPerwalian.id, payload);
       return perwalianService.createPerwalian(payload);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success(selectedPerwalian ? 'Pengajuan diperbarui.' : 'Pengajuan berhasil dikirim!');
-      queryClient.invalidateQueries(['perwalian']);
-      queryClient.invalidateQueries(['dashboard-mahasiswa']);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['perwalian'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-mahasiswa'] }),
+        queryClient.refetchQueries({ queryKey: ['perwalian'] }),
+      ]);
       setIsFormModalOpen(false);
     },
     onError: (err) => {
@@ -249,11 +253,14 @@ export const PerwalianListPage = () => {
         status: statusToSet || reviewStatus,
         catatan_dosen: catatanDosen,
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success(`Perwalian berhasil diverifikasi!`);
-      queryClient.invalidateQueries(['perwalian']);
-      queryClient.invalidateQueries(['dashboard-dosen']);
-      queryClient.invalidateQueries(['dashboard-admin']);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['perwalian'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-dosen'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-admin'] }),
+        queryClient.refetchQueries({ queryKey: ['perwalian'] }),
+      ]);
       setIsReviewModalOpen(false);
     },
     onError: () => toast.error('Gagal memproses verifikasi perwalian.'),
@@ -277,14 +284,33 @@ export const PerwalianListPage = () => {
             catatan_dosen: 'Telah diverifikasi, disetujui, dan bimbingan dinyatakan selesai oleh Dosen Pembimbing Akademik.',
           });
           toast.success('Perwalian berhasil disetujui dan ditandai selesai.');
-          queryClient.invalidateQueries(['perwalian']);
-          queryClient.invalidateQueries(['dashboard-dosen']);
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ['perwalian'] }),
+            queryClient.invalidateQueries({ queryKey: ['dashboard-dosen'] }),
+            queryClient.invalidateQueries({ queryKey: ['dashboard-admin'] }),
+            queryClient.refetchQueries({ queryKey: ['perwalian'] }),
+          ]);
         } catch (e) {
           toast.error('Gagal memproses persetujuan.');
         }
       }
     });
   };
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => perwalianService.deletePerwalian(id),
+    onSuccess: async () => {
+      toast.success('Pengajuan perwalian dibatalkan.');
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['perwalian'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-mahasiswa'] }),
+        queryClient.refetchQueries({ queryKey: ['perwalian'] }),
+      ]);
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Gagal membatalkan pengajuan.');
+    },
+  });
 
   const handleDelete = (item) => {
     if (item.status !== 'Pending') return toast.error('Perwalian hanya dapat dihapus jika status masih Pending.');
@@ -299,10 +325,7 @@ export const PerwalianListPage = () => {
       cancelButtonText: 'Batal',
     }).then((res) => {
       if (res.isConfirmed) {
-        perwalianService.deletePerwalian(item.id).then(() => {
-          toast.success('Pengajuan perwalian dibatalkan.');
-          queryClient.invalidateQueries(['perwalian']);
-        });
+        deleteMutation.mutate(item.id);
       }
     });
   };
@@ -405,11 +428,7 @@ export const PerwalianListPage = () => {
 
       <Card hover={false}>
         {isLoading ? (
-          <div className="space-y-3 p-4">
-            <Skeleton className="h-10" />
-            <Skeleton className="h-10" />
-            <Skeleton className="h-10" />
-          </div>
+          <LoadingSpinner text="Memuat data bimbingan perwalian mahasiswa..." fullHeight />
         ) : perwalianList.length === 0 ? (
           <EmptyState
             title="Tidak Ada Data Perwalian"
@@ -696,8 +715,8 @@ export const PerwalianListPage = () => {
             value={reviewStatus}
             onChange={(e) => setReviewStatus(e.target.value)}
             options={[
-              { value: 'Disetujui', label: '✅ Disetujui (Tandai Bimbingan Selesai & Validasi KRS)' },
-              { value: 'Ditolak', label: '❌ Ditolak / Revisi (Kembalikan ke Mahasiswa untuk Perbaikan)' },
+              { value: 'Disetujui', label: 'Disetujui (Tandai Bimbingan Selesai & Validasi KRS)' },
+              { value: 'Ditolak', label: 'Ditolak / Revisi (Kembalikan ke Mahasiswa untuk Perbaikan)' },
             ]}
           />
 

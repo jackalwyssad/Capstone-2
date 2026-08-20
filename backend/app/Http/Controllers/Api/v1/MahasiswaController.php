@@ -57,6 +57,31 @@ class MahasiswaController extends Controller
     }
 
     /**
+     * @OA\Get(
+     *     path="/mahasiswa/generate-nim",
+     *     summary="Generate Rekomendasi NIM Otomatis",
+     *     tags={"Mahasiswa"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="prodi", in="query", required=false, example="Teknik Informatika"),
+     *     @OA\Parameter(name="angkatan", in="query", required=false, example="2026"),
+     *     @OA\Response(response=200, description="NIM rekomendasi berhasil dibuat")
+     * )
+     */
+    public function generateNim(Request $request): JsonResponse
+    {
+        $prodi = $request->get('prodi', 'Teknik Informatika');
+        $angkatan = $request->get('angkatan', (string) date('Y'));
+
+        $nim = $this->mahasiswaService->generateNextNim($prodi, $angkatan);
+
+        return $this->successResponse([
+            'nim' => $nim,
+            'prodi' => $prodi,
+            'angkatan' => $angkatan,
+        ], 'NIM rekomendasi berhasil digenerate.');
+    }
+
+    /**
      * @OA\Post(
      *     path="/mahasiswa",
      *     summary="Tambah Data Mahasiswa Baru",
@@ -147,9 +172,22 @@ class MahasiswaController extends Controller
      */
     public function import(ImportMahasiswaRequest $request): JsonResponse
     {
-        $count = $this->exportImportService->importMahasiswaData($request->validated()['data']);
+        $result = $this->exportImportService->importMahasiswaData($request->validated()['data']);
 
-        return $this->successResponse(['imported_count' => $count], "Berhasil mengimpor {$count} data mahasiswa.");
+        $parts = [];
+        if ($result['created_count'] > 0) {
+            $parts[] = "{$result['created_count']} mahasiswa baru ditambahkan";
+        }
+        if ($result['updated_count'] > 0) {
+            $parts[] = "{$result['updated_count']} data diperbarui";
+        }
+        if ($result['skipped_count'] > 0) {
+            $parts[] = "{$result['skipped_count']} data dilewati demi keamanan (NIM sudah dipakai oleh orang lain)";
+        }
+
+        $msg = "Hasil impor ({$result['total']} baris): " . implode(', ', $parts) . '.';
+
+        return $this->successResponse($result, $msg);
     }
 
     /**

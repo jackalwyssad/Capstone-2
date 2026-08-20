@@ -20,6 +20,109 @@ export const exportToExcel = (data, fileName = 'Rekap_Perwalian_STMIK_Bandung') 
 };
 
 /**
+ * Membaca file Excel (.xlsx / .xls / .csv) dan mengonversinya menjadi format data array of objects standar
+ * @param {File} file File Excel dari input file
+ * @returns {Promise<Array>}
+ */
+export const readExcelFile = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        // Ambil array of rows
+        const rawJson = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+        // Normalisasi key kolom secara fleksibel
+        const normalized = rawJson.map((row) => {
+          const item = {};
+          
+          for (const key of Object.keys(row)) {
+            const cleanKey = key.trim().toLowerCase();
+            const val = typeof row[key] === 'string' ? row[key].trim() : row[key];
+
+            if (cleanKey.includes('nim')) {
+              item.nim = String(val);
+            } else if (cleanKey.includes('nama')) {
+              item.nama_lengkap = String(val);
+            } else if (cleanKey.includes('kelamin') || cleanKey === 'jk' || cleanKey === 'gender') {
+              const lowerVal = String(val).toLowerCase();
+              if (lowerVal.startsWith('p') || lowerVal.includes('wanita') || lowerVal.includes('perempuan')) {
+                item.jenis_kelamin = 'Perempuan';
+              } else {
+                item.jenis_kelamin = 'Laki-laki';
+              }
+            } else if (cleanKey.includes('prodi') || cleanKey.includes('jurusan')) {
+              const lowerProdi = String(val).toLowerCase();
+              if (lowerProdi.includes('sistem') || lowerProdi.includes('si')) {
+                item.prodi = 'Sistem Informasi';
+              } else {
+                item.prodi = 'Teknik Informatika';
+              }
+            } else if (cleanKey.includes('angkatan') || cleanKey.includes('tahun')) {
+              item.angkatan = String(val);
+            } else if (cleanKey.includes('ipk')) {
+              item.ipk_terakhir = parseFloat(val) || 0.00;
+            } else if (cleanKey.includes('sks')) {
+              item.sks_lulus = parseInt(val, 10) || 0;
+            }
+          }
+
+          // Fallback default jika tidak terdeteksi
+          if (!item.nama_lengkap && row['Nama']) item.nama_lengkap = String(row['Nama']);
+          if (!item.prodi) item.prodi = 'Teknik Informatika';
+          if (!item.angkatan) item.angkatan = String(new Date().getFullYear());
+          if (!item.jenis_kelamin) item.jenis_kelamin = 'Laki-laki';
+
+          return item;
+        }).filter((row) => Boolean(row.nama_lengkap));
+
+        resolve(normalized);
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    reader.onerror = (error) => reject(error);
+    reader.readAsArrayBuffer(file);
+  });
+};
+
+/**
+ * Membuat dan mengunduh Template Resmi Excel (.xlsx) untuk Impor Data Mahasiswa
+ */
+export const downloadMahasiswaExcelTemplate = () => {
+  const headers = [
+    ['NIM (Opsional - Kosongkan jika ingin dibuat otomatis)', 'Nama Lengkap (Wajib)', 'Jenis Kelamin (Laki-laki/Perempuan)', 'Program Studi (Teknik Informatika/Sistem Informasi)', 'Angkatan (Tahun)', 'IPK Terakhir', 'SKS Lulus'],
+    ['', 'Rahmat Hidayat', 'Laki-laki', 'Teknik Informatika', '2026', '3.65', '48'],
+    ['3226001', 'Siti Nurhaliza', 'Perempuan', 'Sistem Informasi', '2026', '3.75', '48'],
+    ['', 'Dimas Prasetyo', 'Laki-laki', 'Teknik Informatika', '2026', '3.50', '24'],
+  ];
+
+  const worksheet = XLSX.utils.aoa_to_sheet(headers);
+  
+  // Set lebar kolom otomatis
+  worksheet['!cols'] = [
+    { wch: 45 }, // NIM
+    { wch: 28 }, // Nama
+    { wch: 32 }, // Jenis Kelamin
+    { wch: 40 }, // Prodi
+    { wch: 18 }, // Angkatan
+    { wch: 15 }, // IPK
+    { wch: 12 }, // SKS
+  ];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Template Mahasiswa');
+  XLSX.writeFile(workbook, `Template_Import_Mahasiswa_STMIK_Bandung.xlsx`);
+};
+
+/**
  * Ekspor data ke File PDF (.pdf) asli yang otomatis di-download
  * @param {Array} headers Array string header kolom tabel (contoh: ['NIM', 'Nama Mahasiswa', 'Prodi', ...])
  * @param {Array} rows Array of arrays data baris

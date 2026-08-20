@@ -55,6 +55,7 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('dosen', DosenController::class);
 
         // Mahasiswa Management
+        Route::get('/mahasiswa/generate-nim', [MahasiswaController::class, 'generateNim']);
         Route::post('/mahasiswa/import', [MahasiswaController::class, 'import'])->middleware('role:Admin');
         Route::post('/mahasiswa/{id}/reset-password', [MahasiswaController::class, 'resetPassword'])->middleware('role:Admin');
         Route::apiResource('mahasiswa', MahasiswaController::class);

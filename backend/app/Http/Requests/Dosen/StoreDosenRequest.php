@@ -20,6 +20,7 @@ class StoreDosenRequest extends FormRequest
         return [
             'nidn' => ['required', 'string', 'max:20', 'unique:dosen,nidn'],
             'nama_lengkap' => ['required', 'string', 'max:255'],
+            'jenis_kelamin' => ['nullable', 'in:Laki-laki,Perempuan'],
             'gelar' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email', 'unique:dosen,email'],
             'no_hp' => ['nullable', 'string', 'max:20'],

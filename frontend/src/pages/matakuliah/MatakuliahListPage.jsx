@@ -10,6 +10,7 @@ import { Select } from '../../components/common/Select';
 import { Modal } from '../../components/common/Modal';
 import { Card } from '../../components/common/Card';
 import { Skeleton } from '../../components/common/Skeleton';
+import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
 import { toast } from 'sonner';
 import Swal from 'sweetalert2';
@@ -196,7 +197,7 @@ export const MatakuliahListPage = () => {
     if (!options.some((o) => o.value === nextCode)) {
       options.push({
         value: nextCode,
-        label: `${nextCode} ★ (Otomatis Berikutnya)`,
+        label: `${nextCode} (Otomatis Berikutnya)`,
       });
     }
 
@@ -211,7 +212,7 @@ export const MatakuliahListPage = () => {
       }
     }
 
-    options.push({ value: '__MANUAL__', label: '✏️ Ketik Kode Kustom Manual...' });
+    options.push({ value: '__MANUAL__', label: 'Ketik Kode Kustom Manual...' });
 
     return options;
   }, [allMatkul, watchedProdi, watchedSemester, selectedMatkul]);
@@ -278,10 +279,14 @@ export const MatakuliahListPage = () => {
       }
       return matakuliahService.createMatakuliah(data);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success(selectedMatkul ? 'Mata kuliah berhasil diperbarui!' : 'Mata kuliah baru berhasil disimpan ke database!');
-      queryClient.invalidateQueries(['matakuliah']);
-      queryClient.invalidateQueries(['matakuliah-all']);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['matakuliah'] }),
+        queryClient.invalidateQueries({ queryKey: ['matakuliah-all'] }),
+        queryClient.invalidateQueries({ queryKey: ['katalog-matakuliah-all'] }),
+        queryClient.refetchQueries({ queryKey: ['matakuliah'] }),
+      ]);
       setIsFormModalOpen(false);
     },
     onError: (err) => {
@@ -290,6 +295,22 @@ export const MatakuliahListPage = () => {
         Object.values(err.response?.data?.errors || {})?.[0]?.[0] ||
         'Gagal menyimpan data mata kuliah.';
       toast.error(errorMsg);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => matakuliahService.deleteMatakuliah(id),
+    onSuccess: async () => {
+      toast.success('Mata kuliah berhasil dihapus dari database.');
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['matakuliah'] }),
+        queryClient.invalidateQueries({ queryKey: ['matakuliah-all'] }),
+        queryClient.invalidateQueries({ queryKey: ['katalog-matakuliah-all'] }),
+        queryClient.refetchQueries({ queryKey: ['matakuliah'] }),
+      ]);
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Gagal menghapus mata kuliah.');
     },
   });
 
@@ -305,11 +326,7 @@ export const MatakuliahListPage = () => {
       cancelButtonText: 'Batal',
     }).then((res) => {
       if (res.isConfirmed) {
-        matakuliahService.deleteMatakuliah(item.id).then(() => {
-          toast.success('Mata kuliah berhasil dihapus dari database.');
-          queryClient.invalidateQueries(['matakuliah']);
-          queryClient.invalidateQueries(['matakuliah-all']);
-        });
+        deleteMutation.mutate(item.id);
       }
     });
   };
@@ -398,11 +415,7 @@ export const MatakuliahListPage = () => {
       {/* Table Matakuliah & Jadwal */}
       <Card hover={false}>
         {isLoading ? (
-          <div className="space-y-3 p-4">
-            <Skeleton className="h-10" />
-            <Skeleton className="h-10" />
-            <Skeleton className="h-10" />
-          </div>
+          <LoadingSpinner text="Memuat kurikulum mata kuliah & jadwal..." fullHeight />
         ) : matkulList.length === 0 ? (
           <EmptyState
             title="Tidak Ada Mata Kuliah"

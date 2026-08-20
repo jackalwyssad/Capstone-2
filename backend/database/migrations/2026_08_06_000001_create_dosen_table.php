@@ -22,6 +22,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Relasi ke tabel users
             $table->string('nidn')->unique(); // Nomor Induk Dosen Nasional (Unik)
             $table->string('nama_lengkap'); // Nama lengkap dosen beserta gelar
+            $table->enum('jenis_kelamin', ['Laki-laki', 'Perempuan'])->default('Laki-laki'); // Jenis kelamin dosen
             $table->string('gelar'); // Gelar akademik (e.g. M.T., M.Kom., Ph.D.)
             $table->string('email')->unique(); // Email resmi dosen
             $table->string('no_hp')->nullable(); // Nomor WhatsApp / Kontak Dosen

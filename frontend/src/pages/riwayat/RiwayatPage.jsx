@@ -120,7 +120,7 @@ export const RiwayatPage = () => {
                       {isExpanded && hasMatkul && (
                         <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 animate-fade-in">
                           <p className="font-bold text-xs text-slate-800 dark:text-slate-200 mb-2">
-                            📅 Jadwal Kuliah Yang Diambil ({item.sks_diambil} SKS):
+                            Jadwal Kuliah Yang Diambil ({item.sks_diambil} SKS):
                           </p>
                           <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
                             <table className="w-full text-left text-[11px]">

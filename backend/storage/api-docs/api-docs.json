@@ -42,7 +42,7 @@
                                     "password": {
                                         "type": "string",
                                         "format": "password",
-                                        "example": "Admin123!"
+                                        "example": "Admin123"
                                     }
                                 },
                                 "type": "object"
@@ -110,11 +110,11 @@
                                     },
                                     "password": {
                                         "type": "string",
-                                        "example": "Admin123!"
+                                        "example": "Admin123"
                                     },
                                     "password_confirmation": {
                                         "type": "string",
-                                        "example": "Admin123!"
+                                        "example": "Admin123"
                                     }
                                 },
                                 "type": "object"
@@ -157,8 +157,8 @@
                 "tags": [
                     "Autentikasi"
                 ],
-                "summary": "Update Profil Pengguna",
-                "description": "Memperbarui informasi nama, nomor hp, atau avatar akun user aktif.",
+                "summary": "Update Profil Pengguna & Foto",
+                "description": "Memperbarui informasi nama, nomor hp, atau mengunggah file foto/avatar akun user aktif ke penyimpanan lokal.",
                 "operationId": "009ba0c485de93eb37994e1bcc59f208",
                 "responses": {
                     "200": {
@@ -177,12 +177,12 @@
                 "tags": [
                     "Autentikasi"
                 ],
-                "summary": "Permintaan Lupa Password",
-                "description": "Mengirimkan konfirmasi permintaan reset password.",
+                "summary": "Permintaan Lupa Password (Berlaku 5 Menit)",
+                "description": "Membuat token reset password yang berlaku selama 5 menit dan mengirimkannya ke email.",
                 "operationId": "416d90ea95c59448306123a480c0a829",
                 "responses": {
                     "200": {
-                        "description": "Instruksi terkirim"
+                        "description": "Link terkirim"
                     }
                 }
             }
@@ -192,8 +192,8 @@
                 "tags": [
                     "Autentikasi"
                 ],
-                "summary": "Reset Password Baru",
-                "description": "Mengubah password pengguna secara sukses.",
+                "summary": "Reset Password Baru dengan Token 5 Menit",
+                "description": "Mengubah password pengguna jika token masih valid dalam 5 menit.",
                 "operationId": "644c43902a8470da9d1aed4fa9f33fc1",
                 "responses": {
                     "200": {
@@ -495,6 +495,39 @@
                 "responses": {
                     "201": {
                         "description": "Mahasiswa berhasil dibuat"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/mahasiswa/generate-nim": {
+            "get": {
+                "tags": [
+                    "Mahasiswa"
+                ],
+                "summary": "Generate Rekomendasi NIM Otomatis",
+                "operationId": "1da1df9128efa1a77c138de11cf7ce06",
+                "parameters": [
+                    {
+                        "name": "prodi",
+                        "in": "query",
+                        "required": false,
+                        "example": "Teknik Informatika"
+                    },
+                    {
+                        "name": "angkatan",
+                        "in": "query",
+                        "required": false,
+                        "example": "2026"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "NIM rekomendasi berhasil dibuat"
                     }
                 },
                 "security": [

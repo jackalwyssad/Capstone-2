@@ -76,21 +76,34 @@ class UserController extends Controller
     {
         $role = $request->input('role', 'Mahasiswa');
 
+        // Otomatis isi default password jika tidak diisi
+        if (empty($request->password)) {
+            $defaultPassword = $role === 'Mahasiswa' ? 'Mahasiswa123' : ($role === 'Dosen' ? 'Dosen123' : 'Admin123');
+            $request->merge(['password' => $defaultPassword]);
+        }
+
+        // Otomatis isi default email jika mahasiswa & email tidak diisi
+        if (empty($request->email) && $role === 'Mahasiswa' && !empty($request->nim)) {
+            $request->merge(['email' => strtolower($request->nim) . '@student.stmikbandung.ac.id']);
+        }
+
         $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
+            'password' => 'nullable|string|min:6',
             'role' => 'required|string|exists:roles,name',
             'phone_number' => 'nullable|string|max:20',
         ];
 
         if ($role === 'Mahasiswa') {
             $rules['nim'] = 'required|string|max:20|unique:mahasiswa,nim';
+            $rules['jenis_kelamin'] = 'nullable|string|in:Laki-laki,Perempuan';
             $rules['prodi'] = 'nullable|string|in:Teknik Informatika,Sistem Informasi';
             $rules['angkatan'] = 'nullable|string|max:10';
             $rules['dosen_wali_id'] = 'nullable|exists:dosen,id';
         } elseif ($role === 'Dosen') {
             $rules['nidn'] = 'required|string|max:20|unique:dosen,nidn';
+            $rules['jenis_kelamin'] = 'nullable|string|in:Laki-laki,Perempuan';
             $rules['gelar'] = 'nullable|string|max:50';
         }
 
@@ -98,7 +111,6 @@ class UserController extends Controller
             'name.required' => 'Nama lengkap pengguna wajib diisi.',
             'email.required' => 'Email pengguna wajib diisi.',
             'email.unique' => 'Alamat email ini sudah terdaftar dalam sistem.',
-            'password.required' => 'Password wajib diisi.',
             'password.min' => 'Password minimal 6 karakter.',
             'role.required' => 'Role pengguna wajib dipilih.',
             'nim.required' => 'NIM Mahasiswa wajib diisi.',
@@ -142,12 +154,14 @@ class UserController extends Controller
         if ($role === 'Mahasiswa') {
             $mhsId = $user->mahasiswa?->id;
             $rules['nim'] = 'nullable|string|max:20' . ($mhsId ? '|unique:mahasiswa,nim,'.$mhsId : '|unique:mahasiswa,nim');
+            $rules['jenis_kelamin'] = 'nullable|string|in:Laki-laki,Perempuan';
             $rules['prodi'] = 'nullable|string|in:Teknik Informatika,Sistem Informasi';
             $rules['angkatan'] = 'nullable|string|max:10';
             $rules['dosen_wali_id'] = 'nullable|exists:dosen,id';
         } elseif ($role === 'Dosen') {
             $dosenId = $user->dosen?->id;
             $rules['nidn'] = 'nullable|string|max:20' . ($dosenId ? '|unique:dosen,nidn,'.$dosenId : '|unique:dosen,nidn');
+            $rules['jenis_kelamin'] = 'nullable|string|in:Laki-laki,Perempuan';
             $rules['gelar'] = 'nullable|string|max:50';
         }
 

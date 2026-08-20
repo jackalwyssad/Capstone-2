@@ -59,6 +59,7 @@ class DosenService
                 'user_id' => $user->id,
                 'nidn' => $data['nidn'],
                 'nama_lengkap' => $data['nama_lengkap'],
+                'jenis_kelamin' => $data['jenis_kelamin'] ?? 'Laki-laki',
                 'gelar' => $data['gelar'],
                 'email' => $data['email'],
                 'no_hp' => $data['no_hp'] ?? null,

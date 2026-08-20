@@ -44,6 +44,7 @@ class DatabaseSeeder extends Seeder
             [
                 'nidn' => '0401018501',
                 'nama' => 'Dr. Irwan Setiawan, M.T.',
+                'jenis_kelamin' => 'Laki-laki',
                 'gelar' => 'M.T.',
                 'email' => 'dosen1@stmikbandung.ac.id',
                 'no_hp' => '082199881001',
@@ -56,6 +57,7 @@ class DatabaseSeeder extends Seeder
             [
                 'nidn' => '0412058802',
                 'nama' => 'Hj. Nurasiah, M.Kom.',
+                'jenis_kelamin' => 'Perempuan',
                 'gelar' => 'M.Kom.',
                 'email' => 'dosen2@stmikbandung.ac.id',
                 'no_hp' => '082199881002',
@@ -68,6 +70,7 @@ class DatabaseSeeder extends Seeder
             [
                 'nidn' => '0420087903',
                 'nama' => 'Budi Raharjo, Ph.D.',
+                'jenis_kelamin' => 'Laki-laki',
                 'gelar' => 'Ph.D.',
                 'email' => 'dosen3@stmikbandung.ac.id',
                 'no_hp' => '082199881003',
@@ -80,6 +83,7 @@ class DatabaseSeeder extends Seeder
             [
                 'nidn' => '0415119004',
                 'nama' => 'Rina Andriani, S.Kom., M.T.',
+                'jenis_kelamin' => 'Perempuan',
                 'gelar' => 'M.T.',
                 'email' => 'dosen4@stmikbandung.ac.id',
                 'no_hp' => '082199881004',
@@ -92,6 +96,7 @@ class DatabaseSeeder extends Seeder
             [
                 'nidn' => '0408038305',
                 'nama' => 'Ahmad Fauzi, M.Si.',
+                'jenis_kelamin' => 'Laki-laki',
                 'gelar' => 'M.Si.',
                 'email' => 'dosen5@stmikbandung.ac.id',
                 'no_hp' => '082199881005',
@@ -119,6 +124,7 @@ class DatabaseSeeder extends Seeder
                 'user_id'             => $user->id,
                 'nidn'                => $d['nidn'],
                 'nama_lengkap'        => $d['nama'],
+                'jenis_kelamin'       => $d['jenis_kelamin'] ?? 'Laki-laki',
                 'gelar'               => $d['gelar'],
                 'email'               => $d['email'],
                 'no_hp'               => $d['no_hp'],
@@ -131,28 +137,28 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        // 4. Buat 20 Mahasiswa dengan nama asli
+        // 4. Buat 20 Mahasiswa dengan format NIM resmi STMIK Bandung (IF = 12, SI = 32, Tahun 2 Digit, Urutan 3 Digit)
         $mahasiswaData = [
-            ['nim' => '3200001', 'nama' => 'Aditya Pratama',       'prodi' => 'Teknik Informatika', 'angkatan' => '2022'],
-            ['nim' => '3200002', 'nama' => 'Bagus Santoso',        'prodi' => 'Sistem Informasi',   'angkatan' => '2022'],
-            ['nim' => '3200003', 'nama' => 'Citra Wibowo',         'prodi' => 'Teknik Informatika', 'angkatan' => '2023'],
-            ['nim' => '3200004', 'nama' => 'Dian Kusuma',          'prodi' => 'Sistem Informasi',   'angkatan' => '2023'],
-            ['nim' => '3200005', 'nama' => 'Eko Saputra',          'prodi' => 'Teknik Informatika', 'angkatan' => '2021'],
-            ['nim' => '3200006', 'nama' => 'Fajar Permana',        'prodi' => 'Sistem Informasi',   'angkatan' => '2021'],
-            ['nim' => '3200007', 'nama' => 'Gita Hidayat',         'prodi' => 'Teknik Informatika', 'angkatan' => '2024'],
-            ['nim' => '3200008', 'nama' => 'Hendra Ramadhan',      'prodi' => 'Sistem Informasi',   'angkatan' => '2024'],
-            ['nim' => '3200009', 'nama' => 'Indah Utami',          'prodi' => 'Teknik Informatika', 'angkatan' => '2022'],
-            ['nim' => '3200010', 'nama' => 'Joko Wijaya',          'prodi' => 'Sistem Informasi',   'angkatan' => '2023'],
-            ['nim' => '3200011', 'nama' => 'Kiki Susanto',         'prodi' => 'Teknik Informatika', 'angkatan' => '2021'],
-            ['nim' => '3200012', 'nama' => 'Lestari Suryani',      'prodi' => 'Sistem Informasi',   'angkatan' => '2022'],
-            ['nim' => '3200013', 'nama' => 'Maya Anggraeni',       'prodi' => 'Teknik Informatika', 'angkatan' => '2023'],
-            ['nim' => '3200014', 'nama' => 'Nugroho Prabowo',      'prodi' => 'Sistem Informasi',   'angkatan' => '2024'],
-            ['nim' => '3200015', 'nama' => 'Oki Firmansyah',       'prodi' => 'Teknik Informatika', 'angkatan' => '2021'],
-            ['nim' => '3200016', 'nama' => 'Putri Rahayu',         'prodi' => 'Sistem Informasi',   'angkatan' => '2022'],
-            ['nim' => '3200017', 'nama' => 'Rizky Maulana',        'prodi' => 'Teknik Informatika', 'angkatan' => '2023'],
-            ['nim' => '3200018', 'nama' => 'Sari Dewi',            'prodi' => 'Sistem Informasi',   'angkatan' => '2021'],
-            ['nim' => '3200019', 'nama' => 'Taufik Hidayatullah',  'prodi' => 'Teknik Informatika', 'angkatan' => '2024'],
-            ['nim' => '3200020', 'nama' => 'Wahyu Setiawan',       'prodi' => 'Sistem Informasi',   'angkatan' => '2022'],
+            ['nim' => '1222001', 'nama' => 'Aditya Pratama',       'jenis_kelamin' => 'Laki-laki', 'prodi' => 'Teknik Informatika', 'angkatan' => '2022'],
+            ['nim' => '3222001', 'nama' => 'Bagus Santoso',        'jenis_kelamin' => 'Laki-laki', 'prodi' => 'Sistem Informasi',   'angkatan' => '2022'],
+            ['nim' => '1223001', 'nama' => 'Citra Wibowo',         'jenis_kelamin' => 'Perempuan', 'prodi' => 'Teknik Informatika', 'angkatan' => '2023'],
+            ['nim' => '3223001', 'nama' => 'Dian Kusuma',          'jenis_kelamin' => 'Perempuan', 'prodi' => 'Sistem Informasi',   'angkatan' => '2023'],
+            ['nim' => '1221001', 'nama' => 'Eko Saputra',          'jenis_kelamin' => 'Laki-laki', 'prodi' => 'Teknik Informatika', 'angkatan' => '2021'],
+            ['nim' => '3221001', 'nama' => 'Fajar Permana',        'jenis_kelamin' => 'Laki-laki', 'prodi' => 'Sistem Informasi',   'angkatan' => '2021'],
+            ['nim' => '1224001', 'nama' => 'Gita Hidayat',         'jenis_kelamin' => 'Perempuan', 'prodi' => 'Teknik Informatika', 'angkatan' => '2024'],
+            ['nim' => '3224001', 'nama' => 'Hendra Ramadhan',      'jenis_kelamin' => 'Laki-laki', 'prodi' => 'Sistem Informasi',   'angkatan' => '2024'],
+            ['nim' => '1222002', 'nama' => 'Indah Utami',          'jenis_kelamin' => 'Perempuan', 'prodi' => 'Teknik Informatika', 'angkatan' => '2022'],
+            ['nim' => '3223002', 'nama' => 'Joko Wijaya',          'jenis_kelamin' => 'Laki-laki', 'prodi' => 'Sistem Informasi',   'angkatan' => '2023'],
+            ['nim' => '1221002', 'nama' => 'Kiki Susanto',         'jenis_kelamin' => 'Laki-laki', 'prodi' => 'Teknik Informatika', 'angkatan' => '2021'],
+            ['nim' => '3222002', 'nama' => 'Lestari Suryani',      'jenis_kelamin' => 'Perempuan', 'prodi' => 'Sistem Informasi',   'angkatan' => '2022'],
+            ['nim' => '1223002', 'nama' => 'Maya Anggraeni',       'jenis_kelamin' => 'Perempuan', 'prodi' => 'Teknik Informatika', 'angkatan' => '2023'],
+            ['nim' => '3224002', 'nama' => 'Nugroho Prabowo',      'jenis_kelamin' => 'Laki-laki', 'prodi' => 'Sistem Informasi',   'angkatan' => '2024'],
+            ['nim' => '1221003', 'nama' => 'Oki Firmansyah',       'jenis_kelamin' => 'Laki-laki', 'prodi' => 'Teknik Informatika', 'angkatan' => '2021'],
+            ['nim' => '3222003', 'nama' => 'Putri Rahayu',         'jenis_kelamin' => 'Perempuan', 'prodi' => 'Sistem Informasi',   'angkatan' => '2022'],
+            ['nim' => '1223003', 'nama' => 'Rizky Maulana',        'jenis_kelamin' => 'Laki-laki', 'prodi' => 'Teknik Informatika', 'angkatan' => '2023'],
+            ['nim' => '3221002', 'nama' => 'Sari Dewi',            'jenis_kelamin' => 'Perempuan', 'prodi' => 'Sistem Informasi',   'angkatan' => '2021'],
+            ['nim' => '1224002', 'nama' => 'Taufik Hidayatullah',  'jenis_kelamin' => 'Laki-laki', 'prodi' => 'Teknik Informatika', 'angkatan' => '2024'],
+            ['nim' => '3222004', 'nama' => 'Wahyu Setiawan',       'jenis_kelamin' => 'Laki-laki', 'prodi' => 'Sistem Informasi',   'angkatan' => '2022'],
         ];
 
         $ipkSamples  = [3.85, 3.42, 3.67, 2.95, 3.78, 3.10, 3.55, 3.90, 2.88, 3.33,
@@ -181,6 +187,7 @@ class DatabaseSeeder extends Seeder
                 'user_id'       => $user->id,
                 'nim'           => $mhsItem['nim'],
                 'nama_lengkap'  => $mhsItem['nama'],
+                'jenis_kelamin' => $mhsItem['jenis_kelamin'],
                 'prodi'         => $mhsItem['prodi'],
                 'angkatan'      => $mhsItem['angkatan'],
                 'dosen_wali_id' => $dosenWali->id,

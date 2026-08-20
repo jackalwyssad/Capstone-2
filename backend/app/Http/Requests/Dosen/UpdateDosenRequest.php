@@ -23,6 +23,7 @@ class UpdateDosenRequest extends FormRequest
         return [
             'nidn' => ['required', 'string', 'max:20', 'unique:dosen,nidn,'.$dosenId],
             'nama_lengkap' => ['required', 'string', 'max:255'],
+            'jenis_kelamin' => ['nullable', 'in:Laki-laki,Perempuan'],
             'gelar' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255', 'unique:dosen,email,'.$dosenId],
             'no_hp' => ['nullable', 'string', 'max:20'],

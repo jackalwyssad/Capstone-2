@@ -423,6 +423,7 @@ Backend telah dilengkapi dengan dokumentasi interaktif **L5-Swagger OpenAPI 3.0*
 | **Exception Handler** | Error HTTP 401 (Unauthenticated), 403 (Unauthorized), 404 (Not Found) kini menggunakan pesan Bahasa Indonesia |
 | **Bug Fix** | Diperbaiki error `Attempt to read property "id" on string` pada `UpdateMahasiswaRequest` dan `UpdateDosenRequest` saat mengakses route parameter |
 | **Route Guard** | Akses URL langsung (misal `/matakuliah`) saat login sebagai Dosen atau Mahasiswa dialihkan ke halaman 403 |
+| **Format NIM Resmi STMIK** | Teknik Informatika berawalan `12`, Sistem Informasi berawalan `32` + 2 digit tahun masuk (contoh: 2026 ➔ `26`) + nomor urut `01`, `02`, dst. Ditambahkan endpoint `/api/v1/mahasiswa/generate-nim` dan generator auto-fill cerdas pada frontend |
 | **Dosen Pengampu** | Field dosen pengampu pada form mata kuliah menggunakan `<datalist>` autocomplete dari daftar dosen master + riwayat pengampu |
 | **Notifikasi** | Seluruh toast notification di frontend kini menggunakan Bahasa Indonesia yang sopan dan informatif |
 

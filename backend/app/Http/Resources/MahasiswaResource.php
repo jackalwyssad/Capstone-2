@@ -18,6 +18,7 @@ class MahasiswaResource extends JsonResource
             'user_id' => $this->user_id,
             'nim' => $this->nim,
             'nama_lengkap' => $this->nama_lengkap,
+            'jenis_kelamin' => $this->jenis_kelamin ?? 'Laki-laki',
             'prodi' => $this->prodi,
             'angkatan' => $this->angkatan,
             'dosen_wali_id' => $this->dosen_wali_id,

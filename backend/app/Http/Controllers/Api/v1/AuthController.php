@@ -50,7 +50,7 @@ class AuthController extends Controller
      *             required={"email","password"},
      *
      *             @OA\Property(property="email", type="string", format="email", example="admin@stmikbandung.ac.id"),
-     *             @OA\Property(property="password", type="string", format="password", example="Admin123!")
+     *             @OA\Property(property="password", type="string", format="password", example="Admin123")
      *         )
      *     ),
      *
@@ -95,8 +95,8 @@ class AuthController extends Controller
      *
      *             @OA\Property(property="name", type="string", example="Super Administrator"),
      *             @OA\Property(property="email", type="string", example="admin2@stmikbandung.ac.id"),
-     *             @OA\Property(property="password", type="string", example="Admin123!"),
-     *             @OA\Property(property="password_confirmation", type="string", example="Admin123!")
+     *             @OA\Property(property="password", type="string", example="Admin123"),
+     *             @OA\Property(property="password_confirmation", type="string", example="Admin123")
      *         )
      *     ),
      *
@@ -148,6 +148,7 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
             'phone_number' => 'nullable|string|max:20',
+            'jenis_kelamin' => 'nullable|string|in:Laki-laki,Perempuan',
             'avatar' => 'nullable',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
         ]);
@@ -176,6 +177,15 @@ class AuthController extends Controller
             }
             if ($user->dosen) {
                 $user->dosen->update(['foto' => $request->avatar]);
+            }
+        }
+
+        if (! empty($validated['jenis_kelamin'])) {
+            if ($user->mahasiswa) {
+                $user->mahasiswa->update(['jenis_kelamin' => $validated['jenis_kelamin']]);
+            }
+            if ($user->dosen) {
+                $user->dosen->update(['jenis_kelamin' => $validated['jenis_kelamin']]);
             }
         }
 
