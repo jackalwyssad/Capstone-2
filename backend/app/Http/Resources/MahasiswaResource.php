@@ -25,6 +25,8 @@ class MahasiswaResource extends JsonResource
             'ipk_terakhir' => (float) $this->ipk_terakhir,
             'sks_lulus' => (int) $this->sks_lulus,
             'foto' => $this->foto ?? $this->user?->avatar,
+            'email' => $this->user?->email ?? ($this->nim . '@student.stmikbandung.ac.id'),
+            'no_hp' => $this->user?->phone_number,
             'user' => new UserResource($this->whenLoaded('user')),
             'dosen_wali' => new DosenResource($this->whenLoaded('dosenWali')),
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),

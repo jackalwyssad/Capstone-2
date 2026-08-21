@@ -151,6 +151,11 @@ class AuthController extends Controller
             'jenis_kelamin' => 'nullable|string|in:Laki-laki,Perempuan',
             'avatar' => 'nullable',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
+            'alamat' => 'nullable|string|max:500',
+            'tempat_lahir' => 'nullable|string|max:100',
+            'tanggal_lahir' => 'nullable|date',
+            'pendidikan_terakhir' => 'nullable|string|max:50',
+            'gelar' => 'nullable|string|max:50',
         ]);
 
         if ($request->hasFile('foto') || $request->hasFile('avatar')) {
@@ -187,6 +192,36 @@ class AuthController extends Controller
             if ($user->dosen) {
                 $user->dosen->update(['jenis_kelamin' => $validated['jenis_kelamin']]);
             }
+        }
+
+        if ($user->dosen) {
+            $dosenUpdates = [
+                'nama_lengkap' => $validated['name'],
+                'email' => $validated['email'],
+                'no_hp' => $validated['phone_number'] ?? $user->phone_number,
+            ];
+            if (array_key_exists('alamat', $validated)) {
+                $dosenUpdates['alamat'] = $validated['alamat'];
+            }
+            if (array_key_exists('tempat_lahir', $validated)) {
+                $dosenUpdates['tempat_lahir'] = $validated['tempat_lahir'];
+            }
+            if (array_key_exists('tanggal_lahir', $validated)) {
+                $dosenUpdates['tanggal_lahir'] = $validated['tanggal_lahir'];
+            }
+            if (array_key_exists('pendidikan_terakhir', $validated)) {
+                $dosenUpdates['pendidikan_terakhir'] = $validated['pendidikan_terakhir'];
+            }
+            if (!empty($validated['gelar'])) {
+                $dosenUpdates['gelar'] = $validated['gelar'];
+            }
+            $user->dosen->update($dosenUpdates);
+        }
+
+        if ($user->mahasiswa) {
+            $user->mahasiswa->update([
+                'nama_lengkap' => $validated['name'],
+            ]);
         }
 
         $user->name = $validated['name'];

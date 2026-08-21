@@ -40,6 +40,11 @@ export const ProfilePage = () => {
   const [phone, setPhone] = useState(user?.phone_number || '');
   const [jenisKelamin, setJenisKelamin] = useState(user?.mahasiswa?.jenis_kelamin || user?.dosen?.jenis_kelamin || 'Laki-laki');
   const [avatar, setAvatar] = useState(user?.avatar || user?.mahasiswa?.foto || user?.dosen?.foto || '');
+  const [alamat, setAlamat] = useState(user?.dosen?.alamat || '');
+  const [tempatLahir, setTempatLahir] = useState(user?.dosen?.tempat_lahir || '');
+  const [tanggalLahir, setTanggalLahir] = useState(user?.dosen?.tanggal_lahir ? user.dosen.tanggal_lahir.slice(0, 10) : '');
+  const [pendidikanTerakhir, setPendidikanTerakhir] = useState(user?.dosen?.pendidikan_terakhir || 'S2');
+  const [gelar, setGelar] = useState(user?.dosen?.gelar || '');
 
   // Sinkronisasi data saat user di-store terupdate
   React.useEffect(() => {
@@ -49,6 +54,11 @@ export const ProfilePage = () => {
       setPhone(user.phone_number || '');
       setJenisKelamin(user?.mahasiswa?.jenis_kelamin || user?.dosen?.jenis_kelamin || 'Laki-laki');
       setAvatar(user.avatar || user.mahasiswa?.foto || user.dosen?.foto || '');
+      setAlamat(user?.dosen?.alamat || '');
+      setTempatLahir(user?.dosen?.tempat_lahir || '');
+      setTanggalLahir(user?.dosen?.tanggal_lahir ? user.dosen.tanggal_lahir.slice(0, 10) : '');
+      setPendidikanTerakhir(user?.dosen?.pendidikan_terakhir || 'S2');
+      setGelar(user?.dosen?.gelar || '');
     }
   }, [user]);
 
@@ -154,6 +164,11 @@ export const ProfilePage = () => {
         email,
         phone_number: phone,
         jenis_kelamin: jenisKelamin,
+        alamat: hasRole('Dosen') ? alamat : undefined,
+        tempat_lahir: hasRole('Dosen') ? tempatLahir : undefined,
+        tanggal_lahir: hasRole('Dosen') && tanggalLahir ? tanggalLahir : undefined,
+        pendidikan_terakhir: hasRole('Dosen') ? pendidikanTerakhir : undefined,
+        gelar: hasRole('Dosen') ? gelar : undefined,
         avatar: finalAvatar || user?.avatar || undefined,
       });
 
@@ -277,6 +292,13 @@ export const ProfilePage = () => {
               </span>
             )}
           </div>
+
+          {user?.dosen?.alamat && (
+            <div className="mt-3 text-[11px] text-slate-500 dark:text-slate-400 flex items-start gap-1.5 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full text-left">
+              <MapPin className="w-3.5 h-3.5 text-primary-500 flex-shrink-0 mt-0.5" />
+              <span className="line-clamp-2">{user.dosen.alamat}</span>
+            </div>
+          )}
         </Card>
 
         {/* Update Profile Form */}
@@ -322,9 +344,9 @@ export const ProfilePage = () => {
                 />
                 <Input
                   label="Gelar Akademik"
-                  value={user?.dosen?.gelar || '-'}
-                  readOnly
-                  className="bg-slate-100 dark:bg-slate-800 font-bold text-slate-600 dark:text-slate-300 cursor-not-allowed"
+                  value={gelar}
+                  onChange={(e) => setGelar(e.target.value)}
+                  placeholder="e.g. M.T., M.Kom."
                 />
                 <Select
                   label="Jenis Kelamin"
@@ -387,6 +409,55 @@ export const ProfilePage = () => {
                 </div>
               </div>
             </div>
+
+            {/* Input Alamat & Detail Dosen Tambahan */}
+            {hasRole('Dosen') && (
+              <div className="space-y-4 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                  Data Tambahan & Alamat Domisili
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <Input
+                    label="Tempat Lahir"
+                    icon={MapPin}
+                    value={tempatLahir}
+                    onChange={(e) => setTempatLahir(e.target.value)}
+                    placeholder="Contoh: Bandung"
+                  />
+                  <Input
+                    label="Tanggal Lahir"
+                    type="date"
+                    icon={Calendar}
+                    value={tanggalLahir}
+                    onChange={(e) => setTanggalLahir(e.target.value)}
+                  />
+                  <Select
+                    label="Pendidikan Terakhir"
+                    value={pendidikanTerakhir}
+                    onChange={(e) => setPendidikanTerakhir(e.target.value)}
+                    options={[
+                      { value: 'S2', label: 'S2 (Magister)' },
+                      { value: 'S3', label: 'S3 (Doktor / Ph.D.)' },
+                      { value: 'S1', label: 'S1 (Sarjana)' },
+                    ]}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold tracking-wide text-slate-700 dark:text-slate-300 flex items-center gap-1.5 mb-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-primary-500" />
+                    Alamat Kantor / Domisili
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={alamat}
+                    onChange={(e) => setAlamat(e.target.value)}
+                    placeholder="Contoh: Jl. Cikutra No. 113, Coblong, Kota Bandung"
+                    className="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-end pt-2">
               <Button type="submit" isLoading={isLoading || isUploadingPhoto}>

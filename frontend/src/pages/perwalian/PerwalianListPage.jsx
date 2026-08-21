@@ -33,6 +33,8 @@ import {
   Calendar,
   Clock,
   MapPin,
+  Mail,
+  Phone,
 } from 'lucide-react';
 
 const MySwal = withReactContent(Swal);
@@ -59,7 +61,7 @@ export const PerwalianListPage = () => {
 
   // Form State Pengajuan Perwalian
   const [semesterInput, setSemesterInput] = useState('2025/2026 Ganjil');
-  const [ipkInput, setIpkInput] = useState('3.50');
+  const [ipkInput, setIpkInput] = useState('0.00');
   const [catatanMhs, setCatatanMhs] = useState('');
   const [matakuliahList, setMatakuliahList] = useState([]);
 
@@ -141,7 +143,8 @@ export const PerwalianListPage = () => {
   const openCreateModal = () => {
     setSelectedPerwalian(null);
     setSemesterInput('2025/2026 Ganjil');
-    setIpkInput(user?.mahasiswa?.ipk_terakhir ? String(user.mahasiswa.ipk_terakhir) : '3.50');
+    const mhsIpk = user?.mahasiswa?.ipk_terakhir;
+    setIpkInput(mhsIpk !== undefined && mhsIpk !== null ? Number(mhsIpk).toFixed(2) : '0.00');
     setCatatanMhs('');
     // Mulai dengan 1 baris kosong (belum memilih matkul) agar tidak membingungkan mahasiswa
     setMatakuliahList([
@@ -688,18 +691,47 @@ export const PerwalianListPage = () => {
       {/* Modal Review Approval (Dosen Wali) */}
       <Modal isOpen={isReviewModalOpen} onClose={() => setIsReviewModalOpen(false)} title={`Verifikasi & Keputusan Perwalian: ${selectedPerwalian?.mahasiswa?.nama_lengkap}`} maxWidth="max-w-2xl">
         <div className="space-y-4">
-          <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 text-xs space-y-1.5">
-            <div className="flex justify-between">
-              <span className="text-slate-500">Mahasiswa:</span>
-              <strong className="text-slate-900 dark:text-slate-100">{selectedPerwalian?.mahasiswa?.nama_lengkap} ({selectedPerwalian?.mahasiswa?.nim})</strong>
+          <div className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900 text-xs space-y-2.5 border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-500 font-medium">Mahasiswa:</span>
+              <strong className="text-slate-900 dark:text-slate-100 text-sm font-extrabold">{selectedPerwalian?.mahasiswa?.nama_lengkap} ({selectedPerwalian?.mahasiswa?.nim})</strong>
             </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Program Studi / Semester:</span>
-              <span className="font-semibold">{selectedPerwalian?.mahasiswa?.prodi} • {selectedPerwalian?.semester}</span>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-500 font-medium">Program Studi / Semester:</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedPerwalian?.mahasiswa?.prodi} • {selectedPerwalian?.semester}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Total SKS Diajukan:</span>
-              <strong className="text-primary-600 dark:text-primary-400">{selectedPerwalian?.sks_diambil} SKS</strong>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-500 font-medium">Total SKS Diajukan:</span>
+              <strong className="text-primary-600 dark:text-primary-400 font-bold">{selectedPerwalian?.sks_diambil} SKS</strong>
+            </div>
+
+            {/* Informasi Kontak Mahasiswa */}
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-slate-500 font-medium">Kontak Mahasiswa:</span>
+              <div className="flex flex-wrap items-center gap-2">
+                {(selectedPerwalian?.mahasiswa?.email || selectedPerwalian?.mahasiswa?.user?.email) && (
+                  <a
+                    href={`mailto:${selectedPerwalian?.mahasiswa?.email || selectedPerwalian?.mahasiswa?.user?.email}`}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-medium hover:bg-blue-100 transition-colors"
+                    title="Kirim Email ke Mahasiswa"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>{selectedPerwalian?.mahasiswa?.email || selectedPerwalian?.mahasiswa?.user?.email}</span>
+                  </a>
+                )}
+                {(selectedPerwalian?.mahasiswa?.no_hp || selectedPerwalian?.mahasiswa?.user?.phone_number) && (
+                  <a
+                    href={`https://wa.me/${(selectedPerwalian?.mahasiswa?.no_hp || selectedPerwalian?.mahasiswa?.user?.phone_number).replace(/^0/, '62').replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-bold hover:bg-emerald-100 transition-colors"
+                    title="Hubungi Mahasiswa via WhatsApp"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>WhatsApp: {selectedPerwalian?.mahasiswa?.no_hp || selectedPerwalian?.mahasiswa?.user?.phone_number}</span>
+                  </a>
+                )}
+              </div>
             </div>
           </div>
 
@@ -748,19 +780,46 @@ export const PerwalianListPage = () => {
       <Modal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} title={`Detail Perwalian #${selectedPerwalian?.id}`} maxWidth="max-w-2xl">
         {selectedPerwalian && (
           <div className="space-y-4 text-xs">
-            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900">
-              <div className="flex items-center gap-3">
-                <img
-                  src={selectedPerwalian.mahasiswa?.foto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(selectedPerwalian.mahasiswa?.nama_lengkap || 'Mhs')}`}
-                  alt="Avatar"
-                  className="w-12 h-12 rounded-2xl object-cover border border-slate-200 dark:border-slate-800 shadow-sm"
-                />
-                <div>
-                  <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">{selectedPerwalian.mahasiswa?.nama_lengkap} ({selectedPerwalian.mahasiswa?.nim})</p>
-                  <p className="text-slate-500 font-medium">Dosen Wali: {selectedPerwalian.dosen?.nama_lengkap} • {selectedPerwalian.semester}</p>
+            <div className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={selectedPerwalian.mahasiswa?.foto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(selectedPerwalian.mahasiswa?.nama_lengkap || 'Mhs')}`}
+                    alt="Avatar"
+                    className="w-12 h-12 rounded-2xl object-cover border border-slate-200 dark:border-slate-800 shadow-sm"
+                  />
+                  <div>
+                    <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">{selectedPerwalian.mahasiswa?.nama_lengkap} ({selectedPerwalian.mahasiswa?.nim})</p>
+                    <p className="text-slate-500 font-medium">Dosen Wali: {selectedPerwalian.dosen?.nama_lengkap} • {selectedPerwalian.semester}</p>
+                  </div>
                 </div>
+                <Badge status={selectedPerwalian.status} />
               </div>
-              <Badge status={selectedPerwalian.status} />
+
+              {/* Baris Kontak Mahasiswa */}
+              <div className="pt-2.5 border-t border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center gap-2">
+                <span className="text-slate-400 font-medium text-[11px]">Kontak Mahasiswa:</span>
+                {(selectedPerwalian.mahasiswa?.email || selectedPerwalian.mahasiswa?.user?.email) && (
+                  <a
+                    href={`mailto:${selectedPerwalian.mahasiswa?.email || selectedPerwalian.mahasiswa?.user?.email}`}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[11px] font-medium hover:underline"
+                  >
+                    <Mail className="w-3 h-3" />
+                    <span>{selectedPerwalian.mahasiswa?.email || selectedPerwalian.mahasiswa?.user?.email}</span>
+                  </a>
+                )}
+                {(selectedPerwalian.mahasiswa?.no_hp || selectedPerwalian.mahasiswa?.user?.phone_number) && (
+                  <a
+                    href={`https://wa.me/${(selectedPerwalian.mahasiswa?.no_hp || selectedPerwalian.mahasiswa?.user?.phone_number).replace(/^0/, '62').replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold hover:bg-emerald-100 transition-colors"
+                  >
+                    <Phone className="w-3 h-3" />
+                    <span>WhatsApp: {selectedPerwalian.mahasiswa?.no_hp || selectedPerwalian.mahasiswa?.user?.phone_number}</span>
+                  </a>
+                )}
+              </div>
             </div>
 
             {selectedPerwalian.catatan_mahasiswa && (

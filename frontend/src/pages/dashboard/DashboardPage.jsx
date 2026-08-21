@@ -19,6 +19,9 @@ import {
   XCircle,
   PlusCircle,
   FileText,
+  Mail,
+  Phone,
+  MapPin,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -174,7 +177,7 @@ export const DashboardPage = () => {
                     <thead className="bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-bold border-b border-slate-200 dark:border-slate-800">
                       <tr>
                         <th className="p-3">NIM</th>
-                        <th className="p-3">Nama Mahasiswa</th>
+                        <th className="p-3">Mahasiswa & Kontak</th>
                         <th className="p-3">Semester</th>
                         <th className="p-3">IPK</th>
                         <th className="p-3">SKS</th>
@@ -192,12 +195,38 @@ export const DashboardPage = () => {
                       ) : (
                         dosenData.data.pending_approvals.map((item) => (
                           <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
-                            <td className="p-3 font-semibold">{item.mahasiswa?.nim}</td>
-                            <td className="p-3 font-bold text-slate-900 dark:text-slate-100">
-                              {item.mahasiswa?.nama_lengkap}
+                            <td className="p-3 font-semibold text-primary-600 dark:text-primary-400">{item.mahasiswa?.nim}</td>
+                            <td className="p-3">
+                              <div className="font-bold text-slate-900 dark:text-slate-100">
+                                {item.mahasiswa?.nama_lengkap}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                                {item.mahasiswa?.user?.email && (
+                                  <a
+                                    href={`mailto:${item.mahasiswa.user.email}`}
+                                    className="hover:text-primary-600 dark:hover:text-primary-400 flex items-center gap-1"
+                                    title="Kirim Email"
+                                  >
+                                    <Mail className="w-3 h-3 text-slate-400" />
+                                    <span className="truncate max-w-[140px]">{item.mahasiswa.user.email}</span>
+                                  </a>
+                                )}
+                                {item.mahasiswa?.user?.phone_number && (
+                                  <a
+                                    href={`https://wa.me/${item.mahasiswa.user.phone_number.replace(/^0/, '62').replace(/\D/g, '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[10px] font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors"
+                                    title="Hubungi via WhatsApp"
+                                  >
+                                    <Phone className="w-2.5 h-2.5" />
+                                    {item.mahasiswa.user.phone_number}
+                                  </a>
+                                )}
+                              </div>
                             </td>
-                            <td className="p-3">{item.semester}</td>
-                            <td className="p-3">{item.ipk_semester}</td>
+                            <td className="p-3 font-medium">{item.semester}</td>
+                            <td className="p-3 font-semibold">{item.ipk_semester}</td>
                             <td className="p-3">{item.sks_diambil} SKS</td>
                             <td className="p-3">
                               <Badge status={item.status} />
@@ -220,6 +249,39 @@ export const DashboardPage = () => {
           {/* TAMPILAN DASHBOARD MAHASISWA */}
           {hasRole('Mahasiswa') && mhsData?.data && (
             <div>
+              {/* Ringkasan Profil Akademik Mahasiswa */}
+              {mhsData.data.mahasiswa && (
+                <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-primary-900/40 via-primary-800/20 to-transparent border border-primary-500/20 flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-primary-600/20 border border-primary-500/30 flex items-center justify-center text-primary-400 font-extrabold text-lg">
+                      {mhsData.data.mahasiswa.nim?.slice(-2) || 'M'}
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-sm text-slate-900 dark:text-slate-100">
+                        {mhsData.data.mahasiswa.nama_lengkap} ({mhsData.data.mahasiswa.nim})
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Program Studi <strong className="text-primary-500">{mhsData.data.mahasiswa.prodi}</strong> — Angkatan {mhsData.data.mahasiswa.angkatan}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="px-4 py-2 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-center">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">IPK Akumulasi</span>
+                      <span className="text-base font-extrabold text-primary-600 dark:text-primary-400">
+                        {Number(mhsData.data.mahasiswa.ipk_terakhir || 0).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="px-4 py-2 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-center">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Total SKS Lulus</span>
+                      <span className="text-base font-extrabold text-slate-800 dark:text-slate-200">
+                        {mhsData.data.mahasiswa.sks_lulus || 0} SKS
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-6">
                 <StatCard
                   title="Total Perwalian"

@@ -67,8 +67,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
     }
 
     items.push(
-      { label: 'Profil Saya', path: '/profile', icon: User, roles: ['Admin', 'Dosen', 'Mahasiswa'] },
-      { label: 'Pengaturan', path: '/settings', icon: Settings, roles: ['Admin', 'Dosen', 'Mahasiswa'] }
+      { label: 'Profil Saya', path: '/profile', icon: User, roles: ['Admin', 'Dosen', 'Mahasiswa'] }
     );
 
     return items;

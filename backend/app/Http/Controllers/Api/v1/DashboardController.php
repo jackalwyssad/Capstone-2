@@ -158,6 +158,14 @@ class DashboardController extends Controller
                 'approved' => $approved,
                 'rejected' => $rejected,
             ],
+            'mahasiswa' => [
+                'nim' => $mahasiswa->nim,
+                'nama_lengkap' => $mahasiswa->nama_lengkap,
+                'prodi' => $mahasiswa->prodi,
+                'angkatan' => $mahasiswa->angkatan,
+                'ipk_terakhir' => (float) $mahasiswa->ipk_terakhir,
+                'sks_lulus' => (int) $mahasiswa->sks_lulus,
+            ],
             'dosen_wali' => $mahasiswa->dosenWali,
             'active_perwalian' => $recentPerwalian,
         ], 'Data dashboard mahasiswa berhasil didapatkan.');

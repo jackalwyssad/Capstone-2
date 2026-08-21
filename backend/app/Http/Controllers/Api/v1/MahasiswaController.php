@@ -47,6 +47,15 @@ class MahasiswaController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['search', 'prodi', 'angkatan', 'dosen_wali_id', 'sort_by', 'sort_order']);
+
+        // Jika user yang login adalah Dosen, otomatis batasi hanya mahasiswa asuhan/bimbingan dosen tersebut
+        if ($request->user() && $request->user()->hasRole('Dosen')) {
+            $dosen = $request->user()->dosen;
+            if ($dosen) {
+                $filters['dosen_wali_id'] = $dosen->id;
+            }
+        }
+
         $perPage = $request->get('per_page', 10);
         $mahasiswaList = $this->mahasiswaService->getPaginatedMahasiswa($filters, $perPage);
 

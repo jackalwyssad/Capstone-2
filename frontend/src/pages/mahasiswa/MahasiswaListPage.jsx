@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { mahasiswaService } from '../../services/mahasiswaService';
 import { dosenService } from '../../services/dosenService';
+import { useAuthStore } from '../../store/authStore';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
@@ -29,6 +30,9 @@ import {
   Download,
   Info,
   Sparkles,
+  Phone,
+  Mail,
+  MessageCircle,
 } from 'lucide-react';
 
 const MySwal = withReactContent(Swal);
@@ -38,6 +42,10 @@ const MySwal = withReactContent(Swal);
  * Mendukung CRUD Lengkap, Searching, Filtering Prodi (2 Prodi), Pagination, Reset Password, Import Template, dan Export Excel/PDF.
  */
 export const MahasiswaListPage = () => {
+  const { user, hasRole } = useAuthStore();
+  const isAdmin = hasRole('Admin');
+  const isDosen = hasRole('Dosen');
+
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -395,8 +403,12 @@ export const MahasiswaListPage = () => {
   return (
     <div>
       <PageHeader
-        title="Manajemen Data Mahasiswa"
-        description="Kelola biodata akademik mahasiswa STMIK Bandung (Teknik Informatika & Sistem Informasi), penetapan Dosen Wali, dan ekspor/impor data."
+        title={isDosen ? 'Mahasiswa Bimbingan Akademik' : 'Manajemen Data Mahasiswa'}
+        description={
+          isDosen
+            ? 'Daftar mahasiswa asuhan di bawah perwalian dan bimbingan akademik Anda.'
+            : 'Kelola biodata akademik mahasiswa STMIK Bandung (Teknik Informatika & Sistem Informasi), penetapan Dosen Wali, dan ekspor/impor data.'
+        }
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" icon={FileSpreadsheet} onClick={handleExportExcel}>
@@ -405,12 +417,16 @@ export const MahasiswaListPage = () => {
             <Button variant="outline" size="sm" icon={FileText} onClick={handleExportPDF}>
               Export PDF
             </Button>
-            <Button variant="secondary" size="sm" icon={Upload} onClick={() => setIsImportModalOpen(true)}>
-              Import Excel/JSON
-            </Button>
-            <Button size="sm" icon={Plus} onClick={openCreateModal}>
-              Tambah Mahasiswa
-            </Button>
+            {isAdmin && (
+              <>
+                <Button variant="secondary" size="sm" icon={Upload} onClick={() => setIsImportModalOpen(true)}>
+                  Import Excel/JSON
+                </Button>
+                <Button size="sm" icon={Plus} onClick={openCreateModal}>
+                  Tambah Mahasiswa
+                </Button>
+              </>
+            )}
           </div>
         }
       />
@@ -453,12 +469,18 @@ export const MahasiswaListPage = () => {
           <LoadingSpinner text="Memuat data mahasiswa STMIK Bandung..." fullHeight />
         ) : mhsList.length === 0 ? (
           <EmptyState
-            title="Data Mahasiswa Kosong"
-            description="Tidak ada data mahasiswa yang cocok dengan kriteria pencarian Anda."
+            title={isDosen ? 'Belum Ada Mahasiswa Bimbingan' : 'Data Mahasiswa Kosong'}
+            description={
+              isDosen
+                ? 'Belum ada mahasiswa asuhan yang ditugaskan di bawah bimbingan perwalian Anda.'
+                : 'Tidak ada data mahasiswa yang cocok dengan kriteria pencarian Anda.'
+            }
             action={
-              <Button size="sm" icon={Plus} onClick={openCreateModal}>
-                Tambah Mahasiswa Baru
-              </Button>
+              isAdmin ? (
+                <Button size="sm" icon={Plus} onClick={openCreateModal}>
+                  Tambah Mahasiswa Baru
+                </Button>
+              ) : null
             }
           />
         ) : (
@@ -472,10 +494,10 @@ export const MahasiswaListPage = () => {
                     <th className="p-3">Jenis Kelamin</th>
                     <th className="p-3">Program Studi</th>
                     <th className="p-3">Angkatan</th>
-                    <th className="p-3">Dosen Wali</th>
+                    {isAdmin && <th className="p-3">Dosen Wali</th>}
                     <th className="p-3">IPK</th>
                     <th className="p-3">SKS</th>
-                    <th className="p-3 text-right">Aksi</th>
+                    {isAdmin && <th className="p-3 text-right">Aksi</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -486,11 +508,32 @@ export const MahasiswaListPage = () => {
                           <img
                             src={mhs.foto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(mhs.nama_lengkap)}`}
                             alt={mhs.nama_lengkap}
-                            className="w-9 h-9 rounded-xl object-cover border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800"
+                            className="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 flex-shrink-0"
                           />
-                          <div>
-                            <p className="font-bold text-slate-900 dark:text-slate-100">{mhs.nama_lengkap}</p>
-                            <span className="text-[10px] text-slate-400">{mhs.user?.email || `${mhs.nim}@student.stmikbandung.ac.id`}</span>
+                          <div className="min-w-0">
+                            <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{mhs.nama_lengkap}</p>
+                            <div className="flex flex-wrap items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                              <a
+                                href={`mailto:${mhs.email || mhs.user?.email || `${mhs.nim}@student.stmikbandung.ac.id`}`}
+                                className="hover:text-primary-600 dark:hover:text-primary-400 flex items-center gap-1 truncate max-w-[170px]"
+                                title="Kirim Email"
+                              >
+                                <Mail className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                <span className="truncate">{mhs.email || mhs.user?.email || `${mhs.nim}@student.stmikbandung.ac.id`}</span>
+                              </a>
+                              {(mhs.no_hp || mhs.user?.phone_number) && (
+                                <a
+                                  href={`https://wa.me/${(mhs.no_hp || mhs.user?.phone_number).replace(/^0/, '62').replace(/\D/g, '')}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[10px] font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors"
+                                  title="Chat WhatsApp"
+                                >
+                                  <Phone className="w-2.5 h-2.5" />
+                                  {mhs.no_hp || mhs.user?.phone_number}
+                                </a>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -510,32 +553,36 @@ export const MahasiswaListPage = () => {
                         </span>
                       </td>
                       <td className="p-3 font-medium">{mhs.angkatan}</td>
-                      <td className="p-3 font-medium">
-                        {mhs.dosen_wali?.nama_lengkap ? (
-                          <span className="text-slate-900 dark:text-slate-100 font-semibold">{mhs.dosen_wali.nama_lengkap}</span>
-                        ) : (
-                          <span className="text-slate-400 italic">Belum Ditetapkan</span>
-                        )}
-                      </td>
+                      {isAdmin && (
+                        <td className="p-3 font-medium">
+                          {mhs.dosen_wali?.nama_lengkap ? (
+                            <span className="text-slate-900 dark:text-slate-100 font-semibold">{mhs.dosen_wali.nama_lengkap}</span>
+                          ) : (
+                            <span className="text-slate-400 italic">Belum Ditetapkan</span>
+                          )}
+                        </td>
+                      )}
                       <td className="p-3 font-bold text-slate-900 dark:text-slate-100">{mhs.ipk_terakhir}</td>
                       <td className="p-3">{mhs.sks_lulus} SKS</td>
-                      <td className="p-3 text-right space-x-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          title="Reset Password ke Mahasiswa123"
-                          className="text-amber-600 hover:text-amber-700"
-                          onClick={() => handleResetPassword(mhs)}
-                        >
-                          <Key className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button size="sm" variant="ghost" title="Edit Mahasiswa" onClick={() => openEditModal(mhs)}>
-                          <Pencil className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button size="sm" variant="ghost" title="Hapus Mahasiswa" className="text-rose-600 hover:text-rose-700" onClick={() => handleDelete(mhs)}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </td>
+                      {isAdmin && (
+                        <td className="p-3 text-right space-x-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            title="Reset Password ke Mahasiswa123"
+                            className="text-amber-600 hover:text-amber-700"
+                            onClick={() => handleResetPassword(mhs)}
+                          >
+                            <Key className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button size="sm" variant="ghost" title="Edit Mahasiswa" onClick={() => openEditModal(mhs)}>
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button size="sm" variant="ghost" title="Hapus Mahasiswa" className="text-rose-600 hover:text-rose-700" onClick={() => handleDelete(mhs)}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -661,7 +708,7 @@ export const MahasiswaListPage = () => {
           <Select label="Dosen Wali Pembimbing" options={dosenOptions} placeholder="Pilih Dosen Wali..." {...register('dosen_wali_id')} />
           
           <div className="grid grid-cols-2 gap-4">
-            <Input label="IPK Terakhir" type="number" step="0.01" placeholder="3.50" {...register('ipk_terakhir')} />
+            <Input label="IPK Terakhir" type="number" step="0.01" placeholder="0.00" {...register('ipk_terakhir')} />
             <Input label="SKS Lulus" type="number" placeholder="48" {...register('sks_lulus')} />
           </div>
 

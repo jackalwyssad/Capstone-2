@@ -25,6 +25,11 @@ class UpdateProfileRequest extends FormRequest
             'phone_number' => ['nullable', 'string', 'max:20'],
             'jenis_kelamin' => ['nullable', 'string', 'in:Laki-laki,Perempuan'],
             'avatar' => ['nullable', 'string'],
+            'alamat' => ['nullable', 'string', 'max:500'],
+            'tempat_lahir' => ['nullable', 'string', 'max:100'],
+            'tanggal_lahir' => ['nullable', 'date'],
+            'pendidikan_terakhir' => ['nullable', 'string', 'max:50'],
+            'gelar' => ['nullable', 'string', 'max:50'],
         ];
     }
 
