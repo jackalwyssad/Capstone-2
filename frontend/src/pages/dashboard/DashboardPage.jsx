@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/authStore';
 import { dashboardService } from '../../services/dashboardService';
@@ -16,6 +16,7 @@ import {
   FileCheck,
   Clock,
   CheckCircle,
+  CheckCircle2,
   XCircle,
   PlusCircle,
   FileText,
@@ -23,8 +24,10 @@ import {
   Phone,
   MapPin,
   MessageSquare,
+  X,
+  ArrowRight,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 /**
  * Halaman Utama Dashboard Multi-Role (Admin, Dosen Wali, Mahasiswa)
@@ -33,6 +36,10 @@ import { useNavigate } from 'react-router-dom';
 export const DashboardPage = () => {
   const { user, hasRole } = useAuthStore();
   const navigate = useNavigate();
+
+  const [dismissedPerwalianId, setDismissedPerwalianId] = useState(() => {
+    return localStorage.getItem(`dismissed_perwalian_${user?.id}`) || null;
+  });
 
   // Fetch Dashboard Admin
   const { data: adminData, isLoading: isAdminLoading } = useQuery({
@@ -339,63 +346,96 @@ export const DashboardPage = () => {
               {/* Status Perwalian Aktif & Profil Dosen Wali Anda */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card hover={false} className="lg:col-span-2">
-                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-4 font-sans flex items-center justify-between">
-                    <span>Pengajuan Perwalian Terbaru</span>
-                    {mhsData.data.active_perwalian && (
-                      <Badge status={mhsData.data.active_perwalian.status} />
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 font-sans">
+                      Pengajuan Perwalian Terbaru
+                    </h3>
+                    {mhsData.data.active_perwalian && String(dismissedPerwalianId) !== String(mhsData.data.active_perwalian.id) && (
+                      <div className="flex items-center gap-2">
+                        <Badge status={mhsData.data.active_perwalian.status} />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const id = String(mhsData.data.active_perwalian.id);
+                            setDismissedPerwalianId(id);
+                            localStorage.setItem(`dismissed_perwalian_${user?.id}`, id);
+                          }}
+                          className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                          title="Tutup / Sembunyikan catatan ini dari Dashboard"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     )}
-                  </h3>
+                  </div>
 
                   {mhsData.data.active_perwalian ? (
-                    <div className="space-y-4 text-xs">
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
-                        <div>
-                          <p className="text-slate-400">Semester</p>
-                          <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                            {mhsData.data.active_perwalian.semester}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400">IPK Semester Lalu</p>
-                          <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                            {mhsData.data.active_perwalian.ipk_semester}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400">SKS Diambil</p>
-                          <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                            {mhsData.data.active_perwalian.sks_diambil} SKS
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400">Tanggal Pengajuan</p>
-                          <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                            {mhsData.data.active_perwalian.created_at?.slice(0, 10)}
-                          </p>
-                        </div>
+                    String(dismissedPerwalianId) === String(mhsData.data.active_perwalian.id) ? (
+                      <div className="p-8 text-center text-slate-400 text-xs space-y-3">
+                        <p className="font-semibold text-slate-500 dark:text-slate-400 text-sm">Tidak ada pemberitahuan bimbingan baru.</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Semua histori dan jejak audit perwalian tetap tersimpan rapi di menu{' '}
+                          <Link
+                            to="/riwayat"
+                            className="font-bold text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-1"
+                          >
+                            <span>Riwayat Bimbingan</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </Link>
+                          .
+                        </p>
                       </div>
-
-                      {/* Uraian Konsultasi Mahasiswa */}
-                      {mhsData.data.active_perwalian.catatan_mahasiswa && (
-                        <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                          <p className="font-bold text-slate-900 dark:text-slate-100">Uraian Konsultasi Anda:</p>
-                          <p className="text-slate-600 dark:text-slate-400 mt-0.5">{mhsData.data.active_perwalian.catatan_mahasiswa}</p>
+                    ) : (
+                      <div className="space-y-4 text-xs">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
+                          <div>
+                            <p className="text-slate-400">Semester</p>
+                            <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                              {mhsData.data.active_perwalian.semester}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-slate-400">IPK Semester Lalu</p>
+                            <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                              {mhsData.data.active_perwalian.ipk_semester}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-slate-400">SKS Diambil</p>
+                            <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                              {mhsData.data.active_perwalian.sks_diambil} SKS
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-slate-400">Tanggal Pengajuan</p>
+                            <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                              {mhsData.data.active_perwalian.created_at?.slice(0, 10)}
+                            </p>
+                          </div>
                         </div>
-                      )}
 
-                      {/* Catatan / Penyelesaian Dosen Wali */}
-                      {mhsData.data.active_perwalian.catatan_dosen && (
-                        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-200">
-                          <p className="font-bold flex items-center gap-1.5">
-                            <CheckCircle className="w-3.5 h-3.5" />
-                            Catatan / Penyelesaian dari Dosen Wali:
-                          </p>
-                          <p className="mt-0.5 font-medium">{mhsData.data.active_perwalian.catatan_dosen}</p>
-                        </div>
-                      )}
-                    </div>
+                        {/* Uraian Konsultasi Mahasiswa */}
+                        {mhsData.data.active_perwalian.catatan_mahasiswa && (
+                          <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                            <p className="font-bold text-slate-900 dark:text-slate-100">Uraian Konsultasi Anda:</p>
+                            <p className="text-slate-600 dark:text-slate-400 mt-0.5">{mhsData.data.active_perwalian.catatan_mahasiswa}</p>
+                          </div>
+                        )}
+
+                        {/* Catatan / Penyelesaian Dosen Wali */}
+                        {mhsData.data.active_perwalian.catatan_dosen && (
+                          <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-200">
+                            <p className="font-bold flex items-center gap-1.5">
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              Catatan / Penyelesaian dari Dosen Wali:
+                            </p>
+                            <p className="mt-0.5 font-medium whitespace-pre-line">{mhsData.data.active_perwalian.catatan_dosen}</p>
+                          </div>
+                        )}
+                      </div>
+                    )
                   ) : (
-                    <div className="p-8 text-center text-slate-400">
+                    <div className="p-8 text-center text-slate-400 text-xs">
                       Anda belum pernah mengajukan perwalian. Klik tombol "Pengajuan Perwalian" untuk memulai.
                     </div>
                   )}
