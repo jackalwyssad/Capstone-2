@@ -20,8 +20,8 @@ class StorePerwalianRequest extends FormRequest
         return [
             'semester' => ['required', 'string', 'max:50'],
             'ipk_semester' => ['required', 'numeric', 'min:0', 'max:4.00'],
-            'sks_diambil' => ['required', 'integer', 'min:1', 'max:24'],
-            'matakuliah_rencana' => ['required', 'array', 'min:1'],
+            'sks_diambil' => ['required', 'integer', 'min:0', 'max:24'],
+            'matakuliah_rencana' => ['nullable', 'array'],
             'catatan_mahasiswa' => ['nullable', 'string'],
         ];
     }
@@ -32,7 +32,6 @@ class StorePerwalianRequest extends FormRequest
             'semester.required' => 'Semester wajib diisi (contoh: 2025/2026 Ganjil).',
             'ipk_semester.required' => 'IPK semester sebelumnya wajib diisi.',
             'sks_diambil.required' => 'Jumlah SKS yang diambil wajib diisi.',
-            'matakuliah_rencana.required' => 'Pilih minimal satu rencana mata kuliah.',
         ];
     }
 }

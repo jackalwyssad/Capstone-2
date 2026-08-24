@@ -22,6 +22,7 @@ import {
   Mail,
   Phone,
   MapPin,
+  MessageSquare,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -63,9 +64,19 @@ export const DashboardPage = () => {
         description={`Dashboard Portal Academic Perwalian STMIK Bandung — Role: ${user?.roles?.[0] || 'User'}`}
         actions={
           hasRole('Mahasiswa') ? (
-            <Button onClick={() => navigate('/perwalian')} icon={PlusCircle}>
-              Pengajuan Perwalian
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/perwalian?konsul=true')}
+                icon={MessageSquare}
+                className="bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/60 font-bold"
+              >
+                Konsul ke Dosen
+              </Button>
+              <Button onClick={() => navigate('/perwalian')} icon={PlusCircle}>
+                Pengajuan Perwalian (KRS)
+              </Button>
+            </div>
           ) : null
         }
       />
@@ -227,7 +238,15 @@ export const DashboardPage = () => {
                             </td>
                             <td className="p-3 font-medium">{item.semester}</td>
                             <td className="p-3 font-semibold">{item.ipk_semester}</td>
-                            <td className="p-3">{item.sks_diambil} SKS</td>
+                            <td className="p-3">
+                              {item.sks_diambil === 0 || !item.matakuliah_rencana?.length ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                  <MessageSquare className="w-2.5 h-2.5" /> Konsul
+                                </span>
+                              ) : (
+                                <span>{item.sks_diambil} SKS</span>
+                              )}
+                            </td>
                             <td className="p-3">
                               <Badge status={item.status} />
                             </td>

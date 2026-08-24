@@ -17,6 +17,13 @@ class LoginRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('email') && ! $this->filled('identifier')) {
+            $this->merge(['identifier' => $this->input('email')]);
+        }
+    }
+
     public function rules(): array
     {
         return [

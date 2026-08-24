@@ -18,7 +18,7 @@ class ApproveRejectPerwalianRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', 'in:Disetujui,Ditolak'],
+            'status' => ['required', 'in:Disetujui,Ditolak,Pending'],
             'catatan_dosen' => ['nullable', 'string'],
         ];
     }
@@ -26,8 +26,8 @@ class ApproveRejectPerwalianRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'status.required' => 'Status persetujuan perwalian wajib diisi.',
-            'status.in' => 'Status persetujuan harus Disetujui atau Ditolak.',
+            'status.required' => 'Status bimbingan wajib dipilih.',
+            'status.in' => 'Status harus berupa Disetujui, Ditolak, atau Pending (Kirim Pesan Bimbingan).',
         ];
     }
 }

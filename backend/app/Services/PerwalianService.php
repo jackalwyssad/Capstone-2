@@ -52,8 +52,15 @@ class PerwalianService
         $data['mahasiswa_id'] = $mahasiswa->id;
         $data['dosen_id'] = $mahasiswa->dosen_wali_id;
         $data['status'] = 'Pending';
+        $data['matakuliah_rencana'] = $data['matakuliah_rencana'] ?? [];
+        $data['sks_diambil'] = $data['sks_diambil'] ?? 0;
 
         $perwalian = $this->perwalianRepository->create($data);
+
+        $isKonsul = empty($data['matakuliah_rencana']) || $data['sks_diambil'] === 0;
+        $logMessage = $isKonsul
+            ? 'Pengajuan sesi konsultasi / bimbingan chat baru oleh Mahasiswa.'
+            : 'Pengajuan perwalian rencana studi (KRS) baru oleh Mahasiswa.';
 
         // Catat Audit Log
         $this->perwalianRepository->createLog(
@@ -61,7 +68,7 @@ class PerwalianService
             $authUser->id,
             null,
             'Pending',
-            'Pengajuan perwalian baru oleh Mahasiswa.'
+            $logMessage
         );
 
         return $perwalian;
@@ -107,7 +114,7 @@ class PerwalianService
     }
 
     /**
-     * Dosen Wali melakukan Approval (Disetujui) atau Rejection (Ditolak).
+     * Dosen Wali melakukan Tanggapan Bimbingan (Kirim Pesan / Jadwal Temu / Approval / Rejection).
      */
     public function approveOrReject(Perwalian $perwalian, string $status, ?string $catatanDosen, User $authUser): Perwalian
     {
@@ -116,10 +123,14 @@ class PerwalianService
         $updateData = [
             'status' => $status,
             'catatan_dosen' => $catatanDosen,
-            'tgl_persetujuan' => now(),
+            'tgl_persetujuan' => $status !== 'Pending' ? now() : $perwalian->tgl_persetujuan,
         ];
 
         $updated = $this->perwalianRepository->update($perwalian, $updateData);
+
+        $defaultLog = $status === 'Pending'
+            ? 'Dosen Wali mengirimkan pesan bimbingan / info jadwal pertemuan ke Mahasiswa.'
+            : "Perwalian di-{$status} oleh Dosen Wali.";
 
         // Buat Log Aktivitas
         $this->perwalianRepository->createLog(
@@ -127,7 +138,7 @@ class PerwalianService
             $authUser->id,
             $statusSebelumnya,
             $status,
-            $catatanDosen ?? "Perwalian di-{$status} oleh Dosen Wali."
+            $catatanDosen ?: $defaultLog
         );
 
         return $updated;

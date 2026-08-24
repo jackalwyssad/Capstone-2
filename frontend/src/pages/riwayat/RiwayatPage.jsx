@@ -95,7 +95,11 @@ export const RiwayatPage = () => {
                     <div className="text-xs text-slate-600 dark:text-slate-400 space-y-1 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                       <div className="flex items-center justify-between">
                         <p>
-                          <strong>Total SKS:</strong> {item.sks_diambil} SKS | <strong>IPK:</strong> {item.ipk_semester}
+                          {hasMatkul ? (
+                            <><strong>Total SKS:</strong> {item.sks_diambil} SKS | <strong>IPK:</strong> {item.ipk_semester}</>
+                          ) : (
+                            <><strong>Jenis:</strong> <span className="text-purple-600 dark:text-purple-400 font-bold">Konsultasi Chat (0 SKS)</span> | <strong>IPK:</strong> {item.ipk_semester}</>
+                          )}
                         </p>
                         {hasMatkul && (
                           <button
@@ -110,9 +114,15 @@ export const RiwayatPage = () => {
                         )}
                       </div>
 
+                      {item.catatan_mahasiswa && (
+                        <p className="text-slate-700 dark:text-slate-300 mt-1">
+                          <strong>Pesan Mahasiswa:</strong> "{item.catatan_mahasiswa}"
+                        </p>
+                      )}
+
                       {item.catatan_dosen && (
-                        <p className="text-primary-600 dark:text-primary-400 italic mt-1">
-                          "Catatan Dosen: {item.catatan_dosen}"
+                        <p className="text-primary-600 dark:text-primary-400 font-medium mt-1">
+                          <strong>Catatan / Balasan Dosen:</strong> "{item.catatan_dosen}"
                         </p>
                       )}
 

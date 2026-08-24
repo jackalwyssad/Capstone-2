@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { perwalianService } from '../../services/perwalianService';
 import { matakuliahService } from '../../services/matakuliahService';
@@ -35,6 +36,11 @@ import {
   MapPin,
   Mail,
   Phone,
+  MessageSquare,
+  Send,
+  Sparkles,
+  UserCheck,
+  MessageCircle,
 } from 'lucide-react';
 
 const MySwal = withReactContent(Swal);
@@ -42,28 +48,44 @@ const MySwal = withReactContent(Swal);
 /**
  * Halaman Manajemen & Pengajuan Perwalian STMIK Bandung
  * Alur Kerja:
- * 1. Mahasiswa menyusun KRS (katalog 8 semester) & menulis "Uraian Konsultasi (Kendala Akademik & Rencana Studi)".
- * 2. Dosen Wali memverifikasi KRS, memberikan "Catatan / Penyelesaian", dan Menyetujui / Menandai Selesai.
+ * 1. Mahasiswa menyusun KRS (katalog 8 semester) & menulis "Uraian Konsultasi (Kendala Akademik & Rencana Studi)"
+ *    ATAU Mahasiswa dapat melakukan "Konsultasi / Bimbingan Chat" langsung tanpa memilih mata kuliah.
+ * 2. Dosen Wali memverifikasi KRS / memberikan tanggapan bimbingan chat, dan Menyetujui / Menandai Selesai.
  * 3. Ekspor laporan lengkap ke Excel dan PDF.
  */
 export const PerwalianListPage = () => {
   const { user, hasRole } = useAuthStore();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
   const [semesterFilter, setSemesterFilter] = useState('');
 
   // Modal States
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [isKonsulModalOpen, setIsKonsulModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedPerwalian, setSelectedPerwalian] = useState(null);
 
-  // Form State Pengajuan Perwalian
+  // Form State Pengajuan Perwalian (KRS)
   const [semesterInput, setSemesterInput] = useState('2025/2026 Ganjil');
   const [ipkInput, setIpkInput] = useState('0.00');
   const [catatanMhs, setCatatanMhs] = useState('');
   const [matakuliahList, setMatakuliahList] = useState([]);
+
+  // Form State Konsultasi Chat (Tanpa Matkul)
+  const [konsulSemester, setKonsulSemester] = useState('2025/2026 Ganjil');
+  const [konsulPesan, setKonsulPesan] = useState('');
+
+  // Auto trigger modal jika URL ada ?konsul=true
+  useEffect(() => {
+    if (searchParams.get('konsul') === 'true' && hasRole('Mahasiswa')) {
+      openKonsulModal();
+      searchParams.delete('konsul');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams]);
 
   // Fetch Katalog Mata Kuliah Langsung dari Database
   const { data: dbMatkulResponse } = useQuery({
@@ -153,6 +175,13 @@ export const PerwalianListPage = () => {
     setIsFormModalOpen(true);
   };
 
+  const openKonsulModal = () => {
+    setSelectedPerwalian(null);
+    setKonsulSemester('2025/2026 Ganjil');
+    setKonsulPesan('');
+    setIsKonsulModalOpen(true);
+  };
+
   const handleSelectMatkul = (index, kode) => {
     if (kode) {
       const isAlreadySelected = matakuliahList.some((m, idx) => idx !== index && m.kode === kode);
@@ -182,11 +211,18 @@ export const PerwalianListPage = () => {
       return;
     }
     setSelectedPerwalian(item);
-    setSemesterInput(item.semester);
-    setIpkInput(item.ipk_semester);
-    setCatatanMhs(item.catatan_mahasiswa || '');
-    setMatakuliahList(item.matakuliah_rencana || []);
-    setIsFormModalOpen(true);
+    const isKonsulOnly = item.sks_diambil === 0 || !item.matakuliah_rencana || item.matakuliah_rencana.length === 0;
+    if (isKonsulOnly) {
+      setKonsulSemester(item.semester);
+      setKonsulPesan(item.catatan_mahasiswa || '');
+      setIsKonsulModalOpen(true);
+    } else {
+      setSemesterInput(item.semester);
+      setIpkInput(item.ipk_semester);
+      setCatatanMhs(item.catatan_mahasiswa || '');
+      setMatakuliahList(item.matakuliah_rencana || []);
+      setIsFormModalOpen(true);
+    }
   };
 
   const openReviewModal = (item) => {
@@ -207,18 +243,36 @@ export const PerwalianListPage = () => {
       return perwalianService.createPerwalian(payload);
     },
     onSuccess: async () => {
-      toast.success(selectedPerwalian ? 'Pengajuan diperbarui.' : 'Pengajuan berhasil dikirim!');
+      toast.success(selectedPerwalian ? 'Data bimbingan diperbarui.' : 'Pengajuan / Konsultasi berhasil dikirim!');
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['perwalian'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard-mahasiswa'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-dosen'] }),
         queryClient.refetchQueries({ queryKey: ['perwalian'] }),
       ]);
       setIsFormModalOpen(false);
+      setIsKonsulModalOpen(false);
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || 'Gagal menyimpan pengajuan perwalian.');
     },
   });
+
+  const handleKonsulSubmit = (e) => {
+    e.preventDefault();
+    if (!konsulPesan.trim()) {
+      toast.error('Silakan tuliskan pesan atau topik konsultasi Anda.');
+      return;
+    }
+    const mhsIpk = user?.mahasiswa?.ipk_terakhir;
+    saveMutation.mutate({
+      semester: konsulSemester,
+      ipk_semester: mhsIpk !== undefined && mhsIpk !== null ? parseFloat(mhsIpk) : 0,
+      sks_diambil: 0,
+      matakuliah_rencana: [],
+      catatan_mahasiswa: konsulPesan.trim(),
+    });
+  };
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
@@ -380,7 +434,7 @@ export const PerwalianListPage = () => {
         title="Daftar & Pengajuan Perwalian"
         description="Pencatatan bimbingan akademik perwalian mahasiswa, penyusunan KRS dari database mata kuliah resmi, serta verifikasi dan persetujuan Dosen Pembimbing."
         actions={
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" icon={FileSpreadsheet} onClick={handleExportExcel}>
               Export Excel
             </Button>
@@ -388,9 +442,20 @@ export const PerwalianListPage = () => {
               Export PDF
             </Button>
             {hasRole('Mahasiswa') && (
-              <Button size="sm" icon={Plus} onClick={openCreateModal}>
-                Ajukan Perwalian Baru
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  icon={MessageSquare}
+                  onClick={openKonsulModal}
+                  className="bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/60 font-bold shadow-sm"
+                >
+                  Konsul ke Dosen (Chat)
+                </Button>
+                <Button size="sm" icon={Plus} onClick={openCreateModal}>
+                  Ajukan KRS Perwalian
+                </Button>
+              </>
             )}
           </div>
         }
@@ -435,12 +500,23 @@ export const PerwalianListPage = () => {
         ) : perwalianList.length === 0 ? (
           <EmptyState
             title="Tidak Ada Data Perwalian"
-            description="Belum ada pengajuan perwalian ditemukan."
+            description="Belum ada pengajuan perwalian atau sesi konsultasi ditemukan."
             action={
               hasRole('Mahasiswa') ? (
-                <Button size="sm" icon={Plus} onClick={openCreateModal}>
-                  Ajukan Perwalian Baru
-                </Button>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    icon={MessageSquare}
+                    onClick={openKonsulModal}
+                    className="bg-purple-50 text-purple-700 border-purple-200"
+                  >
+                    Konsul ke Dosen (Chat)
+                  </Button>
+                  <Button size="sm" icon={Plus} onClick={openCreateModal}>
+                    Ajukan KRS Perwalian
+                  </Button>
+                </div>
               ) : null
             }
           />
@@ -455,58 +531,71 @@ export const PerwalianListPage = () => {
                     <th className="p-3">Dosen Pembimbing</th>
                     <th className="p-3">Semester</th>
                     <th className="p-3">IPK</th>
-                    <th className="p-3">SKS</th>
+                    <th className="p-3">Jenis / SKS</th>
                     <th className="p-3">Status</th>
                     <th className="p-3 text-right">Aksi & Verifikasi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                  {perwalianList.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
-                      <td className="p-3 font-semibold text-slate-400">#{item.id}</td>
-                      <td className="p-3">
-                        <p className="font-bold text-slate-900 dark:text-slate-100">{item.mahasiswa?.nama_lengkap}</p>
-                        <span className="text-[10px] text-primary-600 dark:text-primary-400 font-semibold">{item.mahasiswa?.nim}</span>
-                      </td>
-                      <td className="p-3 font-medium text-slate-800 dark:text-slate-200">{item.dosen?.nama_lengkap}</td>
-                      <td className="p-3 font-semibold">{item.semester}</td>
-                      <td className="p-3 font-bold">{item.ipk_semester}</td>
-                      <td className="p-3 font-medium">{item.sks_diambil} SKS</td>
-                      <td className="p-3">
-                        <Badge status={item.status} />
-                      </td>
-                      <td className="p-3 text-right space-x-1">
-                        <Button size="sm" variant="ghost" title="Lihat Detail & Jadwal" onClick={() => openDetailModal(item)}>
-                          <Eye className="w-3.5 h-3.5" />
-                        </Button>
+                  {perwalianList.map((item) => {
+                    const isKonsulOnly = item.sks_diambil === 0 || !item.matakuliah_rencana || item.matakuliah_rencana.length === 0;
 
-                        {(hasRole('Dosen') || hasRole('Admin')) && (
-                          <>
-                            <Button size="sm" variant={item.status === 'Pending' ? 'primary' : 'outline'} onClick={() => openReviewModal(item)}>
-                              Verifikasi
-                            </Button>
-                            {item.status === 'Pending' && (
-                              <Button size="sm" variant="outline" className="text-emerald-600 border-emerald-300" onClick={() => handleQuickApprove(item)}>
-                                <CheckCheck className="w-3.5 h-3.5 mr-1" />
-                                Selesai
+                    return (
+                      <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                        <td className="p-3 font-semibold text-slate-400">#{item.id}</td>
+                        <td className="p-3">
+                          <p className="font-bold text-slate-900 dark:text-slate-100">{item.mahasiswa?.nama_lengkap}</p>
+                          <span className="text-[10px] text-primary-600 dark:text-primary-400 font-semibold">{item.mahasiswa?.nim}</span>
+                        </td>
+                        <td className="p-3 font-medium text-slate-800 dark:text-slate-200">{item.dosen?.nama_lengkap}</td>
+                        <td className="p-3 font-semibold">{item.semester}</td>
+                        <td className="p-3 font-bold">{item.ipk_semester}</td>
+                        <td className="p-3">
+                          {isKonsulOnly ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 font-bold text-[10px]">
+                              <MessageSquare className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                              Konsultasi Chat
+                            </span>
+                          ) : (
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">{item.sks_diambil} SKS</span>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          <Badge status={item.status} />
+                        </td>
+                        <td className="p-3 text-right space-x-1">
+                          <Button size="sm" variant="ghost" title={isKonsulOnly ? "Lihat Percakapan Konsultasi" : "Lihat Detail & Jadwal"} onClick={() => openDetailModal(item)}>
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
+
+                          {(hasRole('Dosen') || hasRole('Admin')) && (
+                            <>
+                              <Button size="sm" variant={item.status === 'Pending' ? 'primary' : 'outline'} onClick={() => openReviewModal(item)}>
+                                {isKonsulOnly ? 'Tanggapi' : 'Verifikasi'}
                               </Button>
-                            )}
-                          </>
-                        )}
+                              {item.status === 'Pending' && (
+                                <Button size="sm" variant="outline" className="text-emerald-600 border-emerald-300" onClick={() => handleQuickApprove(item)}>
+                                  <CheckCheck className="w-3.5 h-3.5 mr-1" />
+                                  Selesai
+                                </Button>
+                              )}
+                            </>
+                          )}
 
-                        {hasRole('Mahasiswa') && item.status === 'Pending' && (
-                          <>
-                            <Button size="sm" variant="ghost" title="Edit Pengajuan" onClick={() => openEditModal(item)}>
-                              <Pencil className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button size="sm" variant="ghost" title="Batalkan Pengajuan" className="text-rose-600 hover:text-rose-700" onClick={() => handleDelete(item)}>
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                          {hasRole('Mahasiswa') && item.status === 'Pending' && (
+                            <>
+                              <Button size="sm" variant="ghost" title="Edit Pengajuan / Pesan" onClick={() => openEditModal(item)}>
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button size="sm" variant="ghost" title="Batalkan Pengajuan" className="text-rose-600 hover:text-rose-700" onClick={() => handleDelete(item)}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -521,6 +610,118 @@ export const PerwalianListPage = () => {
           </div>
         )}
       </Card>
+
+      {/* Modal Konsultasi / Bimbingan Chat Langsung ke Dosen (Tanpa Matkul) */}
+      <Modal
+        isOpen={isKonsulModalOpen}
+        onClose={() => setIsKonsulModalOpen(false)}
+        title={selectedPerwalian ? 'Edit Pesan Konsultasi Bimbingan' : '💬 Konsultasi & Bimbingan Chat ke Dosen Wali'}
+        maxWidth="max-w-2xl"
+      >
+        <form onSubmit={handleKonsulSubmit} className="space-y-4">
+          {/* Card Info Dosen Wali Pembimbing */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-primary-500/10 to-transparent border border-purple-200 dark:border-purple-900/50 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-purple-600 dark:text-purple-400 font-extrabold text-lg">
+                <MessageCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-[11px] text-purple-600 dark:text-purple-400 font-bold uppercase tracking-wider">
+                  Sesi Konsultasi Bebas (Tanpa Matkul)
+                </p>
+                <h4 className="font-extrabold text-sm text-slate-900 dark:text-slate-100">
+                  Konsultasi Langsung ke Dosen Wali
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Tuliskan pertanyaan, kendala studi, atau topik bimbingan apapun.
+                </p>
+              </div>
+            </div>
+            <span className="hidden sm:inline-flex px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+              0 SKS • Bimbingan Chat
+            </span>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-1 block">
+              Semester Akademik
+            </label>
+            <select
+              className="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-semibold"
+              value={konsulSemester}
+              onChange={(e) => setKonsulSemester(e.target.value)}
+              required
+            >
+              <option value="2025/2026 Ganjil">2025/2026 Ganjil</option>
+              <option value="2024/2025 Genap">2024/2025 Genap</option>
+              <option value="2024/2025 Ganjil">2024/2025 Ganjil</option>
+            </select>
+          </div>
+
+          {/* Quick Topic Chips */}
+          <div>
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              Pilih Template Topik Cepat (Opsional):
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                'Konsultasi IPK & Beban Studi',
+                'Bimbingan Tugas Akhir / Skripsi',
+                'Pertanyaan Nilai & Remedial',
+                'Konsultasi Magang / KP',
+                'Kendala Akademik Umum',
+              ].map((topic) => (
+                <button
+                  key={topic}
+                  type="button"
+                  onClick={() => {
+                    if (!konsulPesan.includes(topic)) {
+                      setKonsulPesan((prev) => (prev ? `${prev}\n\nTopik: ${topic}\n` : `Topik: ${topic}\n\n`));
+                    }
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 dark:bg-slate-800 hover:bg-purple-100 dark:hover:bg-purple-950/60 hover:text-purple-700 dark:hover:text-purple-300 border border-slate-200 dark:border-slate-700 transition-colors"
+                >
+                  + {topic}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Textarea Konsultasi */}
+          <div>
+            <label className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-1 block">
+              Pesan / Pertanyaan Konsultasi Anda
+            </label>
+            <textarea
+              className="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-800 p-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              rows={6}
+              placeholder="Tuliskan pertanyaan, kendala belajar, diskusi bimbingan, atau hal apapun yang ingin Anda konsultasikan secara langsung kepada Dosen Wali..."
+              value={konsulPesan}
+              onChange={(e) => setKonsulPesan(e.target.value)}
+              required
+            />
+            <p className="text-[11px] text-slate-400 mt-1">
+              Pesan Anda akan langsung masuk ke Dosen Wali untuk ditinjau dan diberikan balasan bimbingan.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+            <Button type="button" variant="outline" onClick={() => setIsKonsulModalOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              isLoading={saveMutation.isLoading}
+              disabled={saveMutation.isLoading || !konsulPesan.trim()}
+              icon={Send}
+              className="bg-purple-600 hover:bg-purple-700 text-white border-transparent"
+            >
+              {selectedPerwalian ? 'Simpan Perubahan' : 'Kirim Pesan Konsultasi'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Modal Form Pengajuan Perwalian dengan Jadwal Lengkap */}
       <Modal isOpen={isFormModalOpen} onClose={() => setIsFormModalOpen(false)} title={selectedPerwalian ? 'Edit Pengajuan Perwalian' : 'Form Pengajuan Perwalian Baru'} maxWidth="max-w-4xl">
@@ -688,9 +889,19 @@ export const PerwalianListPage = () => {
         </form>
       </Modal>
 
-      {/* Modal Review Approval (Dosen Wali) */}
-      <Modal isOpen={isReviewModalOpen} onClose={() => setIsReviewModalOpen(false)} title={`Verifikasi & Keputusan Perwalian: ${selectedPerwalian?.mahasiswa?.nama_lengkap}`} maxWidth="max-w-2xl">
+      {/* Modal Review / Chat Bimbingan & Jadwal Temu (Dosen Wali) */}
+      <Modal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        title={
+          selectedPerwalian?.sks_diambil === 0 || !selectedPerwalian?.matakuliah_rencana?.length
+            ? `💬 Tanggapan Bimbingan: ${selectedPerwalian?.mahasiswa?.nama_lengkap}`
+            : `Verifikasi & Chat Bimbingan: ${selectedPerwalian?.mahasiswa?.nama_lengkap}`
+        }
+        maxWidth="max-w-2xl"
+      >
         <div className="space-y-4">
+          {/* Info Singkat Mahasiswa */}
           <div className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900 text-xs space-y-2.5 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between">
               <span className="text-slate-500 font-medium">Mahasiswa:</span>
@@ -701,8 +912,14 @@ export const PerwalianListPage = () => {
               <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedPerwalian?.mahasiswa?.prodi} • {selectedPerwalian?.semester}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-slate-500 font-medium">Total SKS Diajukan:</span>
-              <strong className="text-primary-600 dark:text-primary-400 font-bold">{selectedPerwalian?.sks_diambil} SKS</strong>
+              <span className="text-slate-500 font-medium">Jenis Bimbingan:</span>
+              {selectedPerwalian?.sks_diambil === 0 || !selectedPerwalian?.matakuliah_rencana?.length ? (
+                <span className="px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-extrabold text-[11px]">
+                  Konsultasi Chat Bebas (0 SKS)
+                </span>
+              ) : (
+                <strong className="text-primary-600 dark:text-primary-400 font-bold">{selectedPerwalian?.sks_diambil} SKS</strong>
+              )}
             </div>
 
             {/* Informasi Kontak Mahasiswa */}
@@ -735,49 +952,188 @@ export const PerwalianListPage = () => {
             </div>
           </div>
 
+          {/* Pesan Mahasiswa */}
           {selectedPerwalian?.catatan_mahasiswa && (
             <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 text-xs">
-              <p className="font-bold text-blue-900 dark:text-blue-200 mb-1">Uraian Konsultasi Mahasiswa:</p>
-              <p className="text-blue-800 dark:text-blue-300 leading-relaxed">{selectedPerwalian.catatan_mahasiswa}</p>
+              <p className="font-bold text-blue-900 dark:text-blue-200 mb-1 flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-blue-600" /> Pesan / Kendala dari Mahasiswa:
+              </p>
+              <p className="text-blue-800 dark:text-blue-300 leading-relaxed whitespace-pre-line">{selectedPerwalian.catatan_mahasiswa}</p>
             </div>
           )}
 
-          <Select
-            label="Keputusan Verifikasi Dosen Wali"
-            value={reviewStatus}
-            onChange={(e) => setReviewStatus(e.target.value)}
-            options={[
-              { value: 'Disetujui', label: 'Disetujui (Tandai Bimbingan Selesai & Validasi KRS)' },
-              { value: 'Ditolak', label: 'Ditolak / Revisi (Kembalikan ke Mahasiswa untuk Perbaikan)' },
-            ]}
-          />
-
+          {/* Pilihan Tindakan / Status Dosen */}
           <div>
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 block">Catatan / Penyelesaian dari Dosen Wali</label>
-            <textarea
-              className="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-800 p-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-              rows={4}
-              placeholder="Tuliskan arahan akademik, saran penyelesaian kendala, atau instruksi perbaikan KRS untuk mahasiswa..."
-              value={catatanDosen}
-              onChange={(e) => setCatatanDosen(e.target.value)}
-            />
+            <label className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5 block">
+              Pilih Tindakan / Keputusan Bimbingan:
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setReviewStatus('Pending')}
+                className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 text-center transition-all ${
+                  reviewStatus === 'Pending'
+                    ? 'bg-purple-100 dark:bg-purple-950 border-purple-500 text-purple-800 dark:text-purple-200 ring-2 ring-purple-500/30'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                <MessageSquare className="w-4 h-4 text-purple-600" />
+                <span>Kirim Pesan / Jadwal Temu</span>
+                <span className="text-[10px] font-normal text-slate-500">(Status: Tetap Berjalan)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setReviewStatus('Disetujui')}
+                className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 text-center transition-all ${
+                  reviewStatus === 'Disetujui'
+                    ? 'bg-emerald-100 dark:bg-emerald-950 border-emerald-500 text-emerald-800 dark:text-emerald-200 ring-2 ring-emerald-500/30'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>Setujui & Selesaikan</span>
+                <span className="text-[10px] font-normal text-slate-500">(Status: Disetujui)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setReviewStatus('Ditolak')}
+                className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 text-center transition-all ${
+                  reviewStatus === 'Ditolak'
+                    ? 'bg-rose-100 dark:bg-rose-950 border-rose-500 text-rose-800 dark:text-rose-200 ring-2 ring-rose-500/30'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                <XCircle className="w-4 h-4 text-rose-600" />
+                <span>Minta Revisi / Ditolak</span>
+                <span className="text-[10px] font-normal text-slate-500">(Status: Perlu Revisi)</span>
+              </button>
+            </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+          {/* Quick Template Buttons untuk Dosen */}
+          <div>
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              Template Pesan & Pengaturan Jadwal Instan (Klik untuk Menambahkan):
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  const msg = `📅 JADWAL PERTEMUAN BIMBINGAN:\n• Tempat: Ruang Dosen STMIK Bandung (Lt. 2)\n• Waktu: Hari Selasa / Kamis, Pukul 10:00 WIB\n• Keperluan: Konsultasi bimbingan akademik dan verifikasi rencana studi.\nSilakan hadir tepat waktu.`;
+                  setCatatanDosen(msg);
+                  setReviewStatus('Pending');
+                }}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 transition-colors"
+              >
+                📍 Temui di Ruang Dosen
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const msg = `💻 JADWAL BIMBINGAN ONLINE:\n• Media: Google Meet / Zoom Online\n• Waktu: Hari Rabu, Pukul 14:00 WIB\n• Link Meeting: https://meet.google.com/stmik-bimbingan\nSilakan bergabung tepat waktu untuk diskusi materi.`;
+                  setCatatanDosen(msg);
+                  setReviewStatus('Pending');
+                }}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 transition-colors"
+              >
+                💻 Jadwal Online (Google Meet)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const msg = `Mohon lakukan penyesuaian pada mata kuliah yang Anda pilih karena total SKS / prasyarat belum terpenuhi. Silakan lakukan revisi pada pengajuan perwalian Anda.`;
+                  setCatatanDosen(msg);
+                  setReviewStatus('Ditolak');
+                }}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 transition-colors"
+              >
+                📑 Minta Revisi KRS
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const msg = `Rencana studi dan konsultasi bimbingan telah diverifikasi dan disetujui. Tetap pertahankan prestasi akademik Anda.`;
+                  setCatatanDosen(msg);
+                  setReviewStatus('Disetujui');
+                }}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition-colors"
+              >
+                ✅ Disetujui & Selesai
+              </button>
+            </div>
+          </div>
+
+          {/* Textarea Pesan Bimbingan / Chat */}
+          <div>
+            <label className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-1 block">
+              Isi Pesan / Catatan Bimbingan & Jadwal Temu untuk Mahasiswa
+            </label>
+            <textarea
+              className="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-800 p-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary-500"
+              rows={5}
+              placeholder="Tuliskan pesan balasan, informasi pertemuan (hari, jam, tempat temu), saran akademik, atau instruksi untuk mahasiswa..."
+              value={catatanDosen}
+              onChange={(e) => setCatatanDosen(e.target.value)}
+              required
+            />
+            <p className="text-[11px] text-slate-400 mt-1">
+              Pesan ini akan langsung muncul di dashboard dan detail riwayat mahasiswa bersangkutan.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
             <Button variant="outline" onClick={() => setIsReviewModalOpen(false)}>Batal</Button>
             <Button
-              variant={reviewStatus === 'Disetujui' ? 'primary' : 'danger'}
+              variant={
+                reviewStatus === 'Disetujui'
+                  ? 'primary'
+                  : reviewStatus === 'Ditolak'
+                  ? 'danger'
+                  : 'outline'
+              }
+              className={
+                reviewStatus === 'Pending'
+                  ? 'bg-purple-600 hover:bg-purple-700 text-white border-transparent'
+                  : ''
+              }
               onClick={() => reviewMutation.mutate(reviewStatus)}
               isLoading={reviewMutation.isLoading}
+              disabled={reviewMutation.isLoading || !catatanDosen?.trim()}
+              icon={
+                reviewStatus === 'Pending'
+                  ? Send
+                  : reviewStatus === 'Disetujui'
+                  ? CheckCheck
+                  : XCircle
+              }
             >
-              {reviewStatus === 'Disetujui' ? 'Verifikasi & Tandai Selesai' : 'Kirim Catatan Revisi'}
+              {reviewStatus === 'Pending'
+                ? 'Kirim Pesan / Jadwal Bimbingan'
+                : reviewStatus === 'Disetujui'
+                ? 'Setujui & Selesaikan'
+                : 'Kirim Catatan Revisi'}
             </Button>
           </div>
         </div>
       </Modal>
 
-      {/* Modal Detail Perwalian Lengkap dengan Jadwal */}
-      <Modal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} title={`Detail Perwalian #${selectedPerwalian?.id}`} maxWidth="max-w-2xl">
+      {/* Modal Detail Perwalian Lengkap / Ruang Percakapan Konsultasi */}
+      <Modal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        title={
+          selectedPerwalian?.sks_diambil === 0 || !selectedPerwalian?.matakuliah_rencana?.length
+            ? `💬 Ruang Percakapan Konsultasi #${selectedPerwalian?.id}`
+            : `Detail Perwalian #${selectedPerwalian?.id}`
+        }
+        maxWidth="max-w-2xl"
+      >
         {selectedPerwalian && (
           <div className="space-y-4 text-xs">
             <div className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900 space-y-3">
@@ -798,7 +1154,7 @@ export const PerwalianListPage = () => {
 
               {/* Baris Kontak Mahasiswa */}
               <div className="pt-2.5 border-t border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center gap-2">
-                <span className="text-slate-400 font-medium text-[11px]">Kontak Mahasiswa:</span>
+                <span className="text-slate-400 font-medium text-[11px]">Kontak:</span>
                 {(selectedPerwalian.mahasiswa?.email || selectedPerwalian.mahasiswa?.user?.email) && (
                   <a
                     href={`mailto:${selectedPerwalian.mahasiswa?.email || selectedPerwalian.mahasiswa?.user?.email}`}
@@ -822,60 +1178,144 @@ export const PerwalianListPage = () => {
               </div>
             </div>
 
-            {selectedPerwalian.catatan_mahasiswa && (
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                <p className="font-bold text-slate-900 dark:text-slate-100 mb-1">Uraian Konsultasi (Kendala Akademik & Rencana Studi):</p>
-                <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{selectedPerwalian.catatan_mahasiswa}</p>
-              </div>
-            )}
+            {/* Jika sesi adalah Konsultasi Chat Langsung (Tanpa Matkul) */}
+            {selectedPerwalian.sks_diambil === 0 || !selectedPerwalian.matakuliah_rencana?.length ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 pb-1 border-b border-slate-200 dark:border-slate-800">
+                  <MessageSquare className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span className="font-bold text-slate-800 dark:text-slate-200">Riwayat Percakapan Bimbingan</span>
+                </div>
 
-            {selectedPerwalian.catatan_dosen && (
-              <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
-                <p className="font-bold text-amber-900 dark:text-amber-200 mb-1 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4" /> Catatan / Penyelesaian dari Dosen Wali:
-                </p>
-                <p className="text-amber-800 dark:text-amber-300 leading-relaxed font-medium">{selectedPerwalian.catatan_dosen}</p>
-              </div>
-            )}
+                {/* Bubble Mahasiswa */}
+                {selectedPerwalian.catatan_mahasiswa && (
+                  <div className="flex gap-3 items-start">
+                    <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-950/60 border border-primary-300 dark:border-primary-800 flex items-center justify-center text-primary-700 dark:text-primary-300 font-bold flex-shrink-0 text-xs">
+                      M
+                    </div>
+                    <div className="flex-1 p-3.5 rounded-2xl rounded-tl-sm bg-primary-50 dark:bg-primary-950/40 border border-primary-200 dark:border-primary-900/60">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-primary-900 dark:text-primary-200">{selectedPerwalian.mahasiswa?.nama_lengkap} (Mahasiswa)</span>
+                        <span className="text-[10px] text-slate-400">Pengajuan Konsultasi</span>
+                      </div>
+                      <p className="text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line">{selectedPerwalian.catatan_mahasiswa}</p>
+                    </div>
+                  </div>
+                )}
 
-            {/* Jadwal & Rencana Mata Kuliah Lengkap */}
-            <div>
-              <p className="font-bold mb-2 text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-primary-600" /> Jadwal & Rencana Mata Kuliah ({selectedPerwalian.sks_diambil} SKS):
-              </p>
-              <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-100 dark:bg-slate-900 font-bold text-slate-700 dark:text-slate-300">
-                    <tr>
-                      <th className="p-2.5">Kode & Mata Kuliah</th>
-                      <th className="p-2.5">Hari & Waktu</th>
-                      <th className="p-2.5">Ruang</th>
-                      <th className="p-2.5 text-right">SKS</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                    {selectedPerwalian.matakuliah_rencana?.map((mk, i) => {
-                      const katalog = katalogMatkul.find((m) => m.kode === mk.kode);
-                      return (
-                        <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
-                          <td className="p-2.5 font-medium">
-                            <span className="font-bold text-primary-600 dark:text-primary-400">{mk.kode}</span> — {mk.nama}
-                            {mk.kelas && <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold">Kls {mk.kelas}</span>}
-                          </td>
-                          <td className="p-2.5 text-slate-600 dark:text-slate-400">
-                            {katalog ? `${katalog.hari}, ${katalog.jam_mulai || katalog.mulai}–${katalog.jam_selesai || katalog.selesai} WIB` : '-'}
-                          </td>
-                          <td className="p-2.5 text-slate-600 dark:text-slate-400">
-                            {katalog ? (katalog.ruangan || katalog.ruang) : '-'}
-                          </td>
-                          <td className="p-2.5 text-right font-bold text-slate-900 dark:text-slate-100">{mk.sks} SKS</td>
+                {/* Bubble Balasan Dosen */}
+                {selectedPerwalian.catatan_dosen ? (
+                  <div className="flex gap-3 items-start">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 flex items-center justify-center text-emerald-700 dark:text-emerald-300 font-bold flex-shrink-0 text-xs">
+                      D
+                    </div>
+                    <div className="flex-1 p-3.5 rounded-2xl rounded-tl-sm bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-emerald-900 dark:text-emerald-200">{selectedPerwalian.dosen?.nama_lengkap} (Dosen Wali)</span>
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Tanggapan & Jadwal Bimbingan
+                        </span>
+                      </div>
+                      <div className="p-3 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-emerald-200/60 dark:border-emerald-900/40">
+                        <p className="text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line font-medium">{selectedPerwalian.catatan_dosen}</p>
+                      </div>
+
+                      {/* Tombol Konfirmasi WhatsApp untuk Mahasiswa */}
+                      {selectedPerwalian.dosen?.no_hp && (
+                        <div className="pt-1 flex items-center justify-between">
+                          <span className="text-[11px] text-slate-500">Perlu konfirmasi lebih lanjut?</span>
+                          <a
+                            href={`https://wa.me/${selectedPerwalian.dosen.no_hp.replace(/^0/, '62').replace(/\D/g, '')}?text=${encodeURIComponent(`Halo Bapak/Ibu ${selectedPerwalian.dosen.nama_lengkap}, saya ${selectedPerwalian.mahasiswa?.nama_lengkap} (${selectedPerwalian.mahasiswa?.nim}) ingin mengonfirmasi jadwal bimbingan/perwalian.`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-sm transition-colors"
+                          >
+                            <Phone className="w-3 h-3" />
+                            <span>Konfirmasi ke WhatsApp Dosen</span>
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-dashed border-amber-300 dark:border-amber-900 text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                    <Clock className="w-4 h-4 flex-shrink-0" />
+                    <span>Sesi bimbingan ini masih menunggu tanggapan atau arahan jadwal temu dari Dosen Pembimbing Akademik.</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Tampilan Standar Pengajuan KRS dengan Jadwal */
+              <>
+                {selectedPerwalian.catatan_mahasiswa && (
+                  <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <p className="font-bold text-slate-900 dark:text-slate-100 mb-1">Uraian Konsultasi (Kendala Akademik & Rencana Studi):</p>
+                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{selectedPerwalian.catatan_mahasiswa}</p>
+                  </div>
+                )}
+
+                {selectedPerwalian.catatan_dosen && (
+                  <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Pesan / Informasi Pertemuan dari Dosen Wali:
+                      </p>
+                      {selectedPerwalian.dosen?.no_hp && (
+                        <a
+                          href={`https://wa.me/${selectedPerwalian.dosen.no_hp.replace(/^0/, '62').replace(/\D/g, '')}?text=${encodeURIComponent(`Halo Bapak/Ibu ${selectedPerwalian.dosen.nama_lengkap}, saya ${selectedPerwalian.mahasiswa?.nama_lengkap} (${selectedPerwalian.mahasiswa?.nim}) ingin mengonfirmasi jadwal perwalian.`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px]"
+                        >
+                          <Phone className="w-2.5 h-2.5" /> Konfirmasi via WA
+                        </a>
+                      )}
+                    </div>
+                    <div className="p-3 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-emerald-200/60 dark:border-emerald-900/40">
+                      <p className="text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line font-medium">{selectedPerwalian.catatan_dosen}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Jadwal & Rencana Mata Kuliah Lengkap */}
+                <div>
+                  <p className="font-bold mb-2 text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-primary-600" /> Jadwal & Rencana Mata Kuliah ({selectedPerwalian.sks_diambil} SKS):
+                  </p>
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-100 dark:bg-slate-900 font-bold text-slate-700 dark:text-slate-300">
+                        <tr>
+                          <th className="p-2.5">Kode & Mata Kuliah</th>
+                          <th className="p-2.5">Hari & Waktu</th>
+                          <th className="p-2.5">Ruang</th>
+                          <th className="p-2.5 text-right">SKS</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                        {selectedPerwalian.matakuliah_rencana?.map((mk, i) => {
+                          const katalog = katalogMatkul.find((m) => m.kode === mk.kode);
+                          return (
+                            <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                              <td className="p-2.5 font-medium">
+                                <span className="font-bold text-primary-600 dark:text-primary-400">{mk.kode}</span> — {mk.nama}
+                                {mk.kelas && <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold">Kls {mk.kelas}</span>}
+                              </td>
+                              <td className="p-2.5 text-slate-600 dark:text-slate-400">
+                                {katalog ? `${katalog.hari}, ${katalog.jam_mulai || katalog.mulai}–${katalog.jam_selesai || katalog.selesai} WIB` : '-'}
+                              </td>
+                              <td className="p-2.5 text-slate-600 dark:text-slate-400">
+                                {katalog ? (katalog.ruangan || katalog.ruang) : '-'}
+                              </td>
+                              <td className="p-2.5 text-right font-bold text-slate-900 dark:text-slate-100">{mk.sks} SKS</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="flex justify-end pt-2">
               <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>Tutup</Button>

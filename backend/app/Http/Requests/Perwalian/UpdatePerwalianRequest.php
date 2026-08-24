@@ -20,8 +20,8 @@ class UpdatePerwalianRequest extends FormRequest
         return [
             'semester' => ['sometimes', 'required', 'string', 'max:50'],
             'ipk_semester' => ['sometimes', 'required', 'numeric', 'min:0', 'max:4.00'],
-            'sks_diambil' => ['sometimes', 'required', 'integer', 'min:1', 'max:24'],
-            'matakuliah_rencana' => ['sometimes', 'required', 'array', 'min:1'],
+            'sks_diambil' => ['sometimes', 'required', 'integer', 'min:0', 'max:24'],
+            'matakuliah_rencana' => ['nullable', 'array'],
             'catatan_mahasiswa' => ['nullable', 'string'],
         ];
     }
@@ -32,8 +32,6 @@ class UpdatePerwalianRequest extends FormRequest
             'semester.required' => 'Semester perkuliahan wajib diisi.',
             'ipk_semester.required' => 'IPK semester wajib diisi.',
             'sks_diambil.required' => 'Total SKS yang diambil wajib diisi.',
-            'matakuliah_rencana.required' => 'Rencana mata kuliah wajib dipilih.',
-            'matakuliah_rencana.min' => 'Pilih minimal satu mata kuliah.',
         ];
     }
 }
