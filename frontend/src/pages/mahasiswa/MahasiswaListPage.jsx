@@ -71,8 +71,9 @@ export const MahasiswaListPage = () => {
 
   // Fetch Data Mahasiswa (TanStack Query)
   const { data: mhsResponse, isLoading } = useQuery({
-    queryKey: ['mahasiswa', page, search, prodiFilter],
+    queryKey: ['mahasiswa', user?.id, page, search, prodiFilter],
     queryFn: () => mahasiswaService.getMahasiswa({ page, search, prodi: prodiFilter, per_page: 10 }),
+    enabled: !!user?.id,
   });
 
   // Fetch List Dosen Wali untuk Dropdown

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { perwalianService } from '../../services/perwalianService';
+import { useAuthStore } from '../../store/authStore';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
@@ -40,11 +41,13 @@ const JADWAL_MAP = {
  * dan rincian Jadwal Kuliah resmi yang disetujui.
  */
 export const RiwayatPage = () => {
+  const { user } = useAuthStore();
   const [expandedId, setExpandedId] = useState(null);
 
   const { data: perwalianResponse, isLoading } = useQuery({
-    queryKey: ['riwayat-perwalian'],
+    queryKey: ['riwayat-perwalian', user?.id],
     queryFn: () => perwalianService.getPerwalian({ per_page: 50 }),
+    enabled: !!user?.id,
   });
 
   const list = perwalianResponse?.data || [];

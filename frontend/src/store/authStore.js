@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { queryClient } from '../lib/queryClient';
 
 /**
  * State Management Autentikasi (Zustand)
@@ -15,6 +16,7 @@ export const useAuthStore = create(
 
       // Menyimpan data sesi login pengguna dan token Bearer
       setAuth: (user, token) => {
+        queryClient.clear(); // Bersihkan semua cache query akun sebelumnya
         set({
           user,
           token,
@@ -29,6 +31,7 @@ export const useAuthStore = create(
 
       // Menghapus data sesi saat pengguna logout
       logout: () => {
+        queryClient.clear(); // Bersihkan semua cache query akun saat logout
         set({
           user: null,
           token: null,

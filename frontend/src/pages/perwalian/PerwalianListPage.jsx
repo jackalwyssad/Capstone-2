@@ -138,8 +138,9 @@ export const PerwalianListPage = () => {
   const [catatanDosen, setCatatanDosen] = useState('');
 
   const { data: perwalianResponse, isLoading } = useQuery({
-    queryKey: ['perwalian', page, statusFilter, semesterFilter],
+    queryKey: ['perwalian', user?.id, page, statusFilter, semesterFilter],
     queryFn: () => perwalianService.getPerwalian({ page, status: statusFilter, semester: semesterFilter, per_page: 10 }),
+    enabled: !!user?.id,
   });
 
   const perwalianList = Array.isArray(perwalianResponse?.data) ? perwalianResponse.data : [];

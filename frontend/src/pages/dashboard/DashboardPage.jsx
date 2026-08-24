@@ -36,23 +36,23 @@ export const DashboardPage = () => {
 
   // Fetch Dashboard Admin
   const { data: adminData, isLoading: isAdminLoading } = useQuery({
-    queryKey: ['dashboard-admin'],
+    queryKey: ['dashboard-admin', user?.id],
     queryFn: dashboardService.getAdminDashboard,
-    enabled: hasRole('Admin'),
+    enabled: hasRole('Admin') && !!user?.id,
   });
 
   // Fetch Dashboard Dosen
   const { data: dosenData, isLoading: isDosenLoading } = useQuery({
-    queryKey: ['dashboard-dosen'],
+    queryKey: ['dashboard-dosen', user?.id],
     queryFn: dashboardService.getDosenDashboard,
-    enabled: hasRole('Dosen'),
+    enabled: hasRole('Dosen') && !!user?.id,
   });
 
   // Fetch Dashboard Mahasiswa
   const { data: mhsData, isLoading: isMhsLoading } = useQuery({
-    queryKey: ['dashboard-mahasiswa'],
+    queryKey: ['dashboard-mahasiswa', user?.id],
     queryFn: dashboardService.getMahasiswaDashboard,
-    enabled: hasRole('Mahasiswa'),
+    enabled: hasRole('Mahasiswa') && !!user?.id,
   });
 
   const isLoading = isAdminLoading || isDosenLoading || isMhsLoading;

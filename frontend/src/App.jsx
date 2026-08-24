@@ -1,23 +1,13 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './lib/queryClient';
 import { AppRoutes } from './routes/AppRoutes';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Toaster } from 'sonner';
 import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/authStore';
 import { authService } from './services/authService';
-
-// Inisialisasi TanStack React Query Client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-      staleTime: 1000 * 60 * 5, // Cache 5 menit
-    },
-  },
-});
 
 /**
  * Komponen Entry Root App
