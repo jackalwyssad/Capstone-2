@@ -138,11 +138,23 @@ php artisan migrate:fresh --seed
 ```
 
 ### C. Data Seeder Siap Pakai untuk Testing:
-- **1 Akun Admin**: `admin@stmikbandung.ac.id` | Password: `Admin123`
-- **5 Dosen Wali**: `dosen1@stmikbandung.ac.id` s.d `dosen5@stmikbandung.ac.id` | Password: `Dosen123`
-- **50 Mahasiswa**: `3200001@student.stmikbandung.ac.id` s.d `3200050@student.stmikbandung.ac.id` | Password: `Mahasiswa123`
-- **100 Transaksi Perwalian** dengan status bervariasi (Disetujui, Pending, Ditolak) beserta audit log.
-- **Data Mata Kuliah Contoh** untuk Prodi Teknik Informatika dan Sistem Informasi.
+- **1 Akun Admin**: Email `admin@stmikbandung.ac.id` | Password: `Admin123`
+- **5 Dosen Wali** (login menggunakan **NIDN**):
+
+  | Nama | NIDN | Password |
+  |---|---|---|
+  | Dr. Irwan Setiawan, M.T. | `0401018501` | `Dosen123` |
+  | Hj. Nurasiah, M.Kom. | `0412058802` | `Dosen123` |
+  | Budi Raharjo, Ph.D. | `0420087903` | `Dosen123` |
+  | Rina Andriani, S.Kom., M.T. | `0415119004` | `Dosen123` |
+  | Ahmad Fauzi, M.Si. | `0408038305` | `Dosen123` |
+
+- **20 Mahasiswa** (login menggunakan **Email**): format `{nim}@student.stmikbandung.ac.id` | Password: `Mahasiswa123`
+  - Contoh: `1222001@student.stmikbandung.ac.id`
+- **40 Transaksi Perwalian** dengan status bervariasi (Disetujui, Pending, Ditolak) beserta audit log.
+- **Data Mata Kuliah** Semester 1–8 untuk Prodi Teknik Informatika dan Sistem Informasi.
+
+> **Catatan**: Admin & Mahasiswa login menggunakan **Email**. Dosen login menggunakan **NIDN** (angka saja).
 
 ---
 

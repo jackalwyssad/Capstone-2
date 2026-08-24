@@ -22,20 +22,30 @@ class AuthService
 
     /**
      * Memproses login user (Admin, Dosen, atau Mahasiswa) dan menghasilkan Sanctum Bearer Token.
+     * Field 'identifier' menerima Email (Admin/Mahasiswa) atau NIDN (Dosen).
      */
     public function login(array $credentials): array
     {
-        $user = $this->authRepository->findByEmail($credentials['email']);
+        $identifier = $credentials['identifier'];
+
+        // Deteksi apakah identifier adalah NIDN (hanya angka) atau Email
+        if (preg_match('/^\d+$/', $identifier)) {
+            // Masukan hanya angka → cari sebagai NIDN Dosen
+            $user = $this->authRepository->findByNidn($identifier);
+        } else {
+            // Masukan mengandung huruf/@ → cari sebagai Email
+            $user = $this->authRepository->findByEmail($identifier);
+        }
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Kredensial email atau password yang Anda masukkan salah.'],
+                'identifier' => ['Kredensial email/NIDN atau password yang Anda masukkan salah.'],
             ]);
         }
 
         if (! $user->is_active) {
             throw ValidationException::withMessages([
-                'email' => ['Akun Anda nonaktif. Silakan hubungi Administrator STMIK Bandung.'],
+                'identifier' => ['Akun Anda nonaktif. Silakan hubungi Administrator STMIK Bandung.'],
             ]);
         }
 
@@ -43,8 +53,8 @@ class AuthService
         $token = $user->createToken('stmik_perwalian_token')->plainTextToken;
 
         return [
-            'user' => $user->load(['roles', 'dosen', 'mahasiswa']),
-            'token' => $token,
+            'user'       => $user->load(['roles', 'dosen', 'mahasiswa']),
+            'token'      => $token,
             'token_type' => 'Bearer',
         ];
     }

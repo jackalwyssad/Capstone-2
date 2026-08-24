@@ -16,6 +16,13 @@ class AuthRepository implements AuthRepositoryInterface
         return User::where('email', $email)->first();
     }
 
+    public function findByNidn(string $nidn): ?User
+    {
+        return User::whereHas('dosen', function ($q) use ($nidn) {
+            $q->where('nidn', $nidn);
+        })->first();
+    }
+
     public function createUser(array $data): User
     {
         return User::create($data);

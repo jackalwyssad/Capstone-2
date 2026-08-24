@@ -6,7 +6,8 @@ use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * Class LoginRequest
- * Form Request untuk validasi masukan kredensial email & password pada fitur Login.
+ * Form Request untuk validasi masukan kredensial login & password pada fitur Login.
+ * Field 'identifier' menerima Email (Admin/Mahasiswa) atau NIDN (Dosen).
  * Menghasilkan respon error validasi (HTTP 422 Unprocessable Entity) secara otomatis jika data tidak valid.
  */
 class LoginRequest extends FormRequest
@@ -19,18 +20,18 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string', 'min:6'],
+            'identifier' => ['required', 'string', 'max:255'],
+            'password'   => ['required', 'string', 'min:6'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'email.required' => 'Email wajib diisi.',
-            'email.email' => 'Format email tidak valid.',
-            'password.required' => 'Password wajib diisi.',
-            'password.min' => 'Password minimal terdiri dari 6 karakter.',
+            'identifier.required' => 'Email atau NIDN wajib diisi.',
+            'identifier.max'      => 'Panjang email atau NIDN maksimal 255 karakter.',
+            'password.required'   => 'Password wajib diisi.',
+            'password.min'        => 'Password minimal terdiri dari 6 karakter.',
         ];
     }
 }

@@ -332,15 +332,21 @@ WEB/
 
 Seluruh akun berikut otomatis dibuat saat menjalankan perintah `php artisan migrate:fresh --seed`:
 
-| No | Role Akses | Email Akun Login | Password Default | Fitur Utama yang Dapat Dicoba |
+| No | Role Akses | Login (Email / NIDN) | Password Default | Fitur Utama yang Dapat Dicoba |
 |:---:|:---|:---|:---:|:---|
-| **1** | **Administrator** | `admin@stmikbandung.ac.id` | `Admin123` | Dashboard Analitik (Recharts Bar/Pie), CRUD & Import Mahasiswa, CRUD & Assign Dosen Wali, **Kelola Mata Kuliah (Kode Auto)**, Rekap Perwalian, Kelola User & Hak Akses Spatie, Export Excel/PDF |
-| **2** | **Dosen Wali (1)** | `dosen1@stmikbandung.ac.id` | `Dosen123` | Dashboard Bimbingan, Review & Approve/Reject Perwalian Mahasiswa Bimbingan, Catatan Dosen, Monitoring Mahasiswa Asuhan, Export Rekap (Scoped) |
-| **3** | **Dosen Wali (2)** | `dosen2@stmikbandung.ac.id` | `Dosen123` | Dashboard Bimbingan, Approval Perwalian Mahasiswa Asuhan Dosen 2 |
-| **4** | **Dosen Wali (3)** | `dosen3@stmikbandung.ac.id` | `Dosen123` | Dashboard Bimbingan, Approval Perwalian Mahasiswa Asuhan Dosen 3 |
-| **5** | **Mahasiswa (1)** | `3200001@student.stmikbandung.ac.id` | `Mahasiswa123` | Dashboard Mahasiswa, Info Dosen Wali, Pengajuan Perwalian Baru (Dynamic KRS Builder), Edit/Hapus Status Pending, Linimasa Riwayat Bimbingan, **Export Rekap Sendiri** |
-| **6** | **Mahasiswa (2)** | `3200002@student.stmikbandung.ac.id` | `Mahasiswa123` | Dashboard & Pengajuan Perwalian Mahasiswa 2 |
-| **...**| **Mahasiswa (3–50)** | `3200003@student.stmikbandung.ac.id` s/d `3200050@student.stmikbandung.ac.id` | `Mahasiswa123` | Masing-masing akun mahasiswa terhubung ke salah satu dari 5 Dosen Wali secara merata |
+| **1** | **Administrator** | Email: `admin@stmikbandung.ac.id` | `Admin123` | Dashboard Analitik (Recharts Bar/Pie), CRUD & Import Mahasiswa, CRUD & Assign Dosen Wali, **Kelola Mata Kuliah (Kode Auto)**, Rekap Perwalian, Kelola User & Hak Akses Spatie, Export Excel/PDF |
+| **2** | **Dosen Wali (1)** | NIDN: `0401018501` *(Dr. Irwan Setiawan, M.T.)* | `Dosen123` | Dashboard Bimbingan, Review & Approve/Reject Perwalian Mahasiswa Bimbingan, Catatan Dosen, Monitoring Mahasiswa Asuhan, Export Rekap (Scoped) |
+| **3** | **Dosen Wali (2)** | NIDN: `0412058802` *(Hj. Nurasiah, M.Kom.)* | `Dosen123` | Dashboard Bimbingan, Approval Perwalian Mahasiswa Asuhan Dosen 2 |
+| **4** | **Dosen Wali (3)** | NIDN: `0420087903` *(Budi Raharjo, Ph.D.)* | `Dosen123` | Dashboard Bimbingan, Approval Perwalian Mahasiswa Asuhan Dosen 3 |
+| **5** | **Dosen Wali (4)** | NIDN: `0415119004` *(Rina Andriani, S.Kom., M.T.)* | `Dosen123` | Dashboard Bimbingan, Approval Perwalian Mahasiswa Asuhan Dosen 4 |
+| **6** | **Dosen Wali (5)** | NIDN: `0408038305` *(Ahmad Fauzi, M.Si.)* | `Dosen123` | Dashboard Bimbingan, Approval Perwalian Mahasiswa Asuhan Dosen 5 |
+| **7** | **Mahasiswa (1)** | Email: `1222001@student.stmikbandung.ac.id` | `Mahasiswa123` | Dashboard Mahasiswa, Info Dosen Wali, Pengajuan Perwalian Baru (Dynamic KRS Builder), Edit/Hapus Status Pending, Linimasa Riwayat Bimbingan, **Export Rekap Sendiri** |
+| **8** | **Mahasiswa (2)** | Email: `3222001@student.stmikbandung.ac.id` | `Mahasiswa123` | Dashboard & Pengajuan Perwalian Mahasiswa 2 |
+| **...**| **Mahasiswa (3–20)** | Email: `{nim}@student.stmikbandung.ac.id` | `Mahasiswa123` | Masing-masing akun mahasiswa terhubung ke salah satu dari 5 Dosen Wali secara merata |
+
+> ⚠️ **Cara Login**: Admin & Mahasiswa gunakan **Email**. Dosen gunakan **NIDN** (angka saja, tanpa @).
+
+
 
 ---
 

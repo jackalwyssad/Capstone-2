@@ -9,11 +9,11 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
-import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
+import { Mail, Lock, LogIn, AlertCircle, User } from 'lucide-react';
 
 // Zod Schema Validation Form Login
 const loginSchema = z.object({
-  email: z.string().min(1, 'Email wajib diisi').email('Format email tidak valid'),
+  identifier: z.string().min(1, 'Email atau NIDN wajib diisi').max(255),
   password: z.string().min(1, 'Password wajib diisi'),
   rememberMe: z.boolean().optional(),
 });
@@ -37,7 +37,7 @@ export const Login = () => {
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
+      identifier: '',
       password: '',
       rememberMe: false,
     },
@@ -56,9 +56,9 @@ export const Login = () => {
     } catch (err) {
       const errorMsg =
         err.response?.data?.message ||
-        err.response?.data?.errors?.email?.[0] ||
+        err.response?.data?.errors?.identifier?.[0] ||
         err.response?.data?.errors?.password?.[0] ||
-        'Kredensial email atau password yang Anda masukkan salah.';
+        'Kredensial email/NIDN atau password yang Anda masukkan salah.';
       setServerError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -91,7 +91,7 @@ export const Login = () => {
       <div className="mb-6 text-center">
         <h2 className="text-xl font-bold text-slate-900 dark:text-white font-sans">Masuk ke Akun Anda</h2>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          Gunakan email dan password terdaftar STMIK Bandung
+          Admin/Mahasiswa gunakan <strong>Email</strong> · Dosen gunakan <strong>NIDN</strong>
         </p>
       </div>
 
@@ -104,12 +104,12 @@ export const Login = () => {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input
-          label="Email"
-          type="email"
-          icon={Mail}
-          placeholder="Email Anda"
-          error={errors.email?.message}
-          {...register('email')}
+          label="Email / NIDN"
+          type="text"
+          icon={User}
+          placeholder="Email atau NIDN Dosen"
+          error={errors.identifier?.message}
+          {...register('identifier')}
         />
 
         <Input

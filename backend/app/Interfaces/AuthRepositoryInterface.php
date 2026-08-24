@@ -12,6 +12,8 @@ interface AuthRepositoryInterface
 {
     public function findByEmail(string $email): ?User;
 
+    public function findByNidn(string $nidn): ?User;
+
     public function createUser(array $data): User;
 
     public function updatePassword(User $user, string $newPassword): bool;
