@@ -120,41 +120,201 @@ MAIL_FROM_NAME="STMIK Bandung - Sistem Perwalian"
 
 ---
 
-## 🗄️ 3. TUTORIAL DATABASE POSTGRESQL, MIGRASI & SEEDER DATA
+## 🗄️ 3. TUTORIAL DATABASE POSTGRESQL, SKEMA RELASI (ERD) & SEEDER
 
-### A. Konsep Relasi Antar Tabel
-1. `users`: Menyimpan kredensial login (Email, Password hash, Phone, Status Aktif).
-2. `roles & permissions` (Spatie): Menyimpan hak akses `Admin`, `Dosen`, dan `Mahasiswa`.
-3. `dosen`: Terhubung 1-to-1 dengan `users` (NIDN, Nama, Gelar, Kuota Bimbingan).
-4. `mahasiswa`: Terhubung 1-to-1 dengan `users` dan Foreign Key `dosen_wali_id` ke tabel `dosen`.
-5. `matakuliah`: Menyimpan data mata kuliah (Kode, Nama, SKS, Prodi, Semester, Ruangan, Dosen Pengampu).
-6. `perwalian`: Foreign Key ke `mahasiswa_id` dan `dosen_id`, menyimpan semester, IPK, SKS, data rencana matakuliah (JSON format), status (`Pending`, `Disetujui`, `Ditolak`), serta catatan mahasiswa & dosen.
-7. `perwalian_logs`: Menyimpan jejak histori perubahan status perwalian (*audit trail*).
+### A. Diagram Relasi Entitas (Entity-Relationship Diagram / ERD)
 
-### B. Menjalankan Migrasi & Seeder Lengkap
-Jalankan satu perintah ini di terminal:
+```mermaid
+erDiagram
+    USERS ||--o| DOSEN : "1-to-1 (user_id)"
+    USERS ||--o| MAHASISWA : "1-to-1 (user_id)"
+    USERS ||--o{ PERWALIAN_LOGS : "1-to-Many (user_id)"
+    USERS }|--|{ ROLES : "Polymorphic Many-to-Many (Spatie)"
+
+    DOSEN ||--o{ MAHASISWA : "1-to-Many (dosen_wali_id)"
+    DOSEN ||--o{ PERWALIAN : "1-to-Many (dosen_id)"
+
+    MAHASISWA ||--o{ PERWALIAN : "1-to-Many (mahasiswa_id)"
+    
+    PERWALIAN ||--o{ PERWALIAN_LOGS : "1-to-Many (perwalian_id)"
+    MATAKULIAH }o--o{ PERWALIAN : "Embedded JSON Array (matakuliah_rencana)"
+
+    USERS {
+        bigint id PK
+        string name
+        string email UK
+        string password
+        string phone_number
+        string avatar
+        boolean is_active
+        timestamp created_at
+    }
+
+    DOSEN {
+        bigint id PK
+        bigint user_id FK
+        string nidn UK
+        string nama_lengkap
+        string jenis_kelamin
+        string gelar
+        string email UK
+        string no_hp
+        string alamat
+        string tempat_lahir
+        date tanggal_lahir
+        string pendidikan_terakhir
+        integer kuota_bimbingan
+        string foto
+    }
+
+    MAHASISWA {
+        bigint id PK
+        bigint user_id FK
+        string nim UK
+        string nama_lengkap
+        string jenis_kelamin
+        string prodi
+        string angkatan
+        bigint dosen_wali_id FK
+        decimal ipk_terakhir
+        integer sks_lulus
+        string foto
+    }
+
+    PERWALIAN {
+        bigint id PK
+        bigint mahasiswa_id FK
+        bigint dosen_id FK
+        string tahun_akademik
+        integer semester
+        decimal ipk_semester
+        integer sks_diambil
+        json matakuliah_rencana
+        string status
+        text catatan_mahasiswa
+        text catatan_dosen
+        timestamp tgl_pengajuan
+        timestamp tgl_persetujuan
+    }
+
+    PERWALIAN_LOGS {
+        bigint id PK
+        bigint perwalian_id FK
+        bigint user_id FK
+        string status_sebelumnya
+        string status_baru
+        text catatan
+        timestamp created_at
+    }
+
+    MATAKULIAH {
+        bigint id PK
+        string kode_matkul UK
+        string nama_matkul
+        integer sks
+        integer semester
+        string prodi
+        string nama_dosen
+        string ruangan
+        string hari
+        string jam
+    }
+```
+
+---
+
+### B. Penjelasan Detail Relasi Antar Tabel & Kardinalitas
+
+1. **Relasi `users` ➔ `dosen` (One-to-One)**:
+   - **Foreign Key**: `dosen.user_id` $\rightarrow$ `users.id` (`ON DELETE CASCADE`).
+   - **Aturan**: Setiap akun login dosen di tabel `users` memiliki tepat 1 rekaman biodata akademik di tabel `dosen`.
+   - **Eloquent**:
+     - Di `User.php`: `$this->hasOne(Dosen::class, 'user_id');`
+     - Di `Dosen.php`: `$this->belongsTo(User::class, 'user_id');`
+
+2. **Relasi `users` ➔ `mahasiswa` (One-to-One)**:
+   - **Foreign Key**: `mahasiswa.user_id` $\rightarrow$ `users.id` (`ON DELETE CASCADE`).
+   - **Aturan**: Setiap akun login mahasiswa di tabel `users` memiliki tepat 1 rekaman profil mahasiswa di tabel `mahasiswa`.
+   - **Eloquent**:
+     - Di `User.php`: `$this->hasOne(Mahasiswa::class, 'user_id');`
+     - Di `Mahasiswa.php`: `$this->belongsTo(User::class, 'user_id');`
+
+3. **Relasi `dosen` ➔ `mahasiswa` (One-to-Many - Dosen Wali)**:
+   - **Foreign Key**: `mahasiswa.dosen_wali_id` $\rightarrow$ `dosen.id` (`ON DELETE SET NULL`).
+   - **Aturan**: 1 Dosen Wali dapat membimbing **banyak mahasiswa** (sesuai `kuota_bimbingan`), sedangkan 1 Mahasiswa hanya memiliki **1 Dosen Wali tetap**.
+   - **Eloquent**:
+     - Di `Dosen.php`: `$this->hasMany(Mahasiswa::class, 'dosen_wali_id');`
+     - Di `Mahasiswa.php`: `$this->belongsTo(Dosen::class, 'dosen_wali_id');`
+
+4. **Relasi `mahasiswa` ➔ `perwalian` (One-to-Many)**:
+   - **Foreign Key**: `perwalian.mahasiswa_id` $\rightarrow$ `mahasiswa.id` (`ON DELETE CASCADE`).
+   - **Aturan**: 1 Mahasiswa dapat memiliki riwayat pengajuan perwalian di banyak semester (Semester 1 s/d 8).
+   - **Eloquent**:
+     - Di `Mahasiswa.php`: `$this->hasMany(Perwalian::class, 'mahasiswa_id');`
+     - Di `Perwalian.php`: `$this->belongsTo(Mahasiswa::class, 'mahasiswa_id');`
+
+5. **Relasi `dosen` ➔ `perwalian` (One-to-Many)**:
+   - **Foreign Key**: `perwalian.dosen_id` $\rightarrow$ `dosen.id` (`ON DELETE RESTRICT`).
+   - **Aturan**: 1 Dosen Wali memvalidasi banyak transaksi perwalian dari seluruh mahasiswa bimbingannya.
+   - **Eloquent**:
+     - Di `Dosen.php`: `$this->hasMany(Perwalian::class, 'dosen_id');`
+     - Di `Perwalian.php`: `$this->belongsTo(Dosen::class, 'dosen_id');`
+
+6. **Relasi `perwalian` ➔ `perwalian_logs` (One-to-Many - Audit Trail)**:
+   - **Foreign Key**: `perwalian_logs.perwalian_id` $\rightarrow$ `perwalian.id` (`ON DELETE CASCADE`).
+   - **Aturan**: Setiap kali status perwalian berubah (`Pending` $\rightarrow$ `Disetujui` / `Ditolak`), sistem mencatat 1 baris jejak kronologis lengkap dengan waktu, aktor pengubah (`user_id`), dan catatan evaluasi.
+   - **Eloquent**:
+     - Di `Perwalian.php`: `$this->hasMany(PerwalianLog::class, 'perwalian_id');`
+     - Di `PerwalianLog.php`: `$this->belongsTo(Perwalian::class, 'perwalian_id');`
+
+7. **Struktur Data Rencana Studi `matakuliah_rencana` (JSON Field)**:
+   - Kolom `perwalian.matakuliah_rencana` menggunakan tipe data native **JSON** di PostgreSQL.
+   - Menyimpan array objek mata kuliah yang dipilih mahasiswa:
+     ```json
+     [
+       {
+         "kode": "IF201",
+         "nama": "Struktur Data & Algoritma",
+         "sks": 3,
+         "kelas": "IF-A",
+         "jadwal": "Senin 08:00 - 10:30"
+       },
+       {
+         "kode": "IF202",
+         "nama": "Basis Data Lanjut",
+         "sks": 3,
+         "kelas": "IF-A",
+         "jadwal": "Selasa 13:00 - 15:30"
+       }
+     ]
+     ```
+
+---
+
+### C. Menjalankan Migrasi & Seeder Lengkap
+
+Jalankan perintah ini di terminal folder `backend`:
 ```bash
 php artisan migrate:fresh --seed
 ```
 
-### C. Data Seeder Siap Pakai untuk Testing:
-- **1 Akun Admin**: Email `admin@stmikbandung.ac.id` | Password: `Admin123`
-- **5 Dosen Wali** (login menggunakan **NIDN**):
+---
 
-  | Nama | NIDN | Password |
-  |---|---|---|
-  | Dr. Irwan Setiawan, M.T. | `0401018501` | `Dosen123` |
-  | Hj. Nurasiah, M.Kom. | `0412058802` | `Dosen123` |
-  | Budi Raharjo, Ph.D. | `0420087903` | `Dosen123` |
-  | Rina Andriani, S.Kom., M.T. | `0415119004` | `Dosen123` |
-  | Ahmad Fauzi, M.Si. | `0408038305` | `Dosen123` |
+### D. Data Seeder Siap Pakai untuk Testing:
+- **1 Akun Admin**: Email `admin@stmikbandung.ac.id` | Password: `Admin123!`
+- **5 Dosen Wali** (Login menggunakan **Email** atau **NIDN**):
 
-- **20 Mahasiswa** (login menggunakan **Email**): format `{nim}@student.stmikbandung.ac.id` | Password: `Mahasiswa123`
-  - Contoh: `1222001@student.stmikbandung.ac.id`
-- **40 Transaksi Perwalian** dengan status bervariasi (Disetujui, Pending, Ditolak) beserta audit log.
-- **Data Mata Kuliah** Semester 1–8 untuk Prodi Teknik Informatika dan Sistem Informasi.
+  | Nama Dosen | NIDN | Email Login | Password Default |
+  |---|---|---|---|
+  | Dr. Irwan Setiawan, M.T. | `0401018501` | `dosen1@stmikbandung.ac.id` | `Dosen123!` |
+  | Hj. Nurasiah, M.Kom. | `0412058802` | `dosen2@stmikbandung.ac.id` | `Dosen123!` |
+  | Budi Raharjo, Ph.D. | `0420087903` | `dosen3@stmikbandung.ac.id` | `Dosen123!` |
+  | Rina Andriani, S.Kom., M.T. | `0415119004` | `dosen4@stmikbandung.ac.id` | `Dosen123!` |
+  | Ahmad Fauzi, M.Si. | `0408038305` | `dosen5@stmikbandung.ac.id` | `Dosen123!` |
 
-> **Catatan**: Admin & Mahasiswa login menggunakan **Email**. Dosen login menggunakan **NIDN** (angka saja).
+- **50 Mahasiswa**: format email `mhs1@student.stmikbandung.ac.id` s.d `mhs50@student.stmikbandung.ac.id` | Password: `Mahasiswa123!`
+- **100 Transaksi Perwalian** dengan status bervariasi (`Disetujui`, `Pending`, `Ditolak`) beserta linimasa audit log.
+- **Master Data Mata Kuliah** Semester 1–8 untuk Prodi Teknik Informatika dan Sistem Informasi.
 
 ---
 

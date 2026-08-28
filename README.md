@@ -120,6 +120,106 @@ Sistem Pencatatan Perwalian STMIK Bandung dirancang untuk mendigitalisasi dan me
 
 ---
 
+## 🗄️ SKEMA BASIS DATA & DIAGRAM RELASI (ERD)
+
+Berikut adalah diagram relasi entitas (*Entity-Relationship Diagram*) lengkap sistem perwalian di basis data PostgreSQL:
+
+```mermaid
+erDiagram
+    USERS ||--o| DOSEN : "1-to-1 (user_id)"
+    USERS ||--o| MAHASISWA : "1-to-1 (user_id)"
+    USERS ||--o{ PERWALIAN_LOGS : "1-to-Many (user_id)"
+    USERS }|--|{ ROLES : "Polymorphic Many-to-Many (Spatie)"
+
+    DOSEN ||--o{ MAHASISWA : "1-to-Many (dosen_wali_id)"
+    DOSEN ||--o{ PERWALIAN : "1-to-Many (dosen_id)"
+
+    MAHASISWA ||--o{ PERWALIAN : "1-to-Many (mahasiswa_id)"
+    
+    PERWALIAN ||--o{ PERWALIAN_LOGS : "1-to-Many (perwalian_id)"
+    MATAKULIAH }o--o{ PERWALIAN : "Embedded JSON Array (matakuliah_rencana)"
+
+    USERS {
+        bigint id PK
+        string name
+        string email UK
+        string password
+        string phone_number
+        string avatar
+        boolean is_active
+    }
+
+    DOSEN {
+        bigint id PK
+        bigint user_id FK
+        string nidn UK
+        string nama_lengkap
+        string jenis_kelamin
+        string gelar
+        string email UK
+        string no_hp
+        integer kuota_bimbingan
+    }
+
+    MAHASISWA {
+        bigint id PK
+        bigint user_id FK
+        string nim UK
+        string nama_lengkap
+        string jenis_kelamin
+        string prodi
+        string angkatan
+        bigint dosen_wali_id FK
+        decimal ipk_terakhir
+        integer sks_lulus
+    }
+
+    PERWALIAN {
+        bigint id PK
+        bigint mahasiswa_id FK
+        bigint dosen_id FK
+        string tahun_akademik
+        integer semester
+        decimal ipk_semester
+        integer sks_diambil
+        json matakuliah_rencana
+        string status
+        text catatan_mahasiswa
+        text catatan_dosen
+    }
+
+    PERWALIAN_LOGS {
+        bigint id PK
+        bigint perwalian_id FK
+        bigint user_id FK
+        string status_sebelumnya
+        string status_baru
+        text catatan
+        timestamp created_at
+    }
+
+    MATAKULIAH {
+        bigint id PK
+        string kode_matkul UK
+        string nama_matkul
+        integer sks
+        integer semester
+        string prodi
+        string nama_dosen
+        string ruangan
+    }
+```
+
+### Rangkuman Kardinalitas Relasi:
+* **`users` ➔ `dosen`** (*1-to-1*): 1 akun login terhubung ke 1 profil data dosen.
+* **`users` ➔ `mahasiswa`** (*1-to-1*): 1 akun login terhubung ke 1 data mahasiswa.
+* **`dosen` ➔ `mahasiswa`** (*1-to-Many*): 1 Dosen Wali membimbing banyak mahasiswa.
+* **`mahasiswa` ➔ `perwalian`** (*1-to-Many*): 1 Mahasiswa memiliki riwayat pengajuan perwalian tiap semester.
+* **`dosen` ➔ `perwalian`** (*1-to-Many*): 1 Dosen Wali memvalidasi pengajuan dari seluruh mahasiswa asuhannya.
+* **`perwalian` ➔ `perwalian_logs`** (*1-to-Many*): 1 pengajuan perwalian memiliki linimasa jejak perubahan status (Audit Trail).
+
+---
+
 ## 👥 FITUR LENGKAP BERDASARKAN HAK AKSES ROLE
 
 ### 🎓 1. Mahasiswa
