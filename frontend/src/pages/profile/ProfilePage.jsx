@@ -22,6 +22,10 @@ import {
   Check,
   X,
   RefreshCw,
+  KeyRound,
+  Lock,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 /**
@@ -180,6 +184,51 @@ export const ProfilePage = () => {
       toast.error(err.response?.data?.message || 'Gagal memperbarui profil.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // State & Handler Ganti Password
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirmation, setNewPasswordConfirmation] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  const handleChangePasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (!currentPassword) {
+      toast.error('Masukkan password Anda saat ini.');
+      return;
+    }
+    if (!newPassword || newPassword.length < 8) {
+      toast.error('Password baru minimal harus 8 karakter.');
+      return;
+    }
+    if (newPassword !== newPasswordConfirmation) {
+      toast.error('Konfirmasi password baru tidak cocok.');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const res = await authService.changePassword({
+        current_password: currentPassword,
+        new_password: newPassword,
+        new_password_confirmation: newPasswordConfirmation,
+      });
+
+      if (res.success) {
+        toast.success('Password Anda berhasil diperbarui! Gunakan password baru ini untuk login berikutnya.');
+        setCurrentPassword('');
+        setNewPassword('');
+        setNewPasswordConfirmation('');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal mengubah password. Pastikan password saat ini benar.');
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -467,6 +516,84 @@ export const ProfilePage = () => {
           </form>
         </Card>
       </div>
+
+      {/* Card Ganti Password Akun */}
+      <Card hover={false} className="mb-6 border-t-4 border-t-amber-500">
+        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1 font-sans flex items-center gap-2">
+          <KeyRound className="w-5 h-5 text-amber-500" />
+          Ganti Password Akun
+        </h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
+          Perbarui kata sandi akun Anda secara berkala untuk menjaga keamanan data perwalian STMIK Bandung.
+        </p>
+
+        <form onSubmit={handleChangePasswordSubmit} className="space-y-4 max-w-2xl">
+          <div className="relative">
+            <Input
+              label="Password Saat Ini"
+              type={showCurrentPassword ? 'text' : 'password'}
+              icon={Lock}
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Masukkan password saat ini"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+              className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+            >
+              {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="relative">
+              <Input
+                label="Password Baru"
+                type={showNewPassword ? 'text' : 'password'}
+                icon={Lock}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Minimal 8 karakter"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+              >
+                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+
+            <div className="relative">
+              <Input
+                label="Konfirmasi Password Baru"
+                type={showConfirmPassword ? 'text' : 'password'}
+                icon={Lock}
+                value={newPasswordConfirmation}
+                onChange={(e) => setNewPasswordConfirmation(e.target.value)}
+                placeholder="Ulangi password baru"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button type="submit" isLoading={isChangingPassword} icon={KeyRound} className="bg-amber-600 hover:bg-amber-700 text-white">
+              Perbarui Password
+            </Button>
+          </div>
+        </form>
+      </Card>
 
       {/* Profil Dosen Wali Anda (Untuk Mahasiswa) */}
       {hasRole('Mahasiswa') && user?.mahasiswa?.dosen_wali && (

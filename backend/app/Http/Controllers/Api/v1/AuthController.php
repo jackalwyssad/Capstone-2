@@ -425,6 +425,33 @@ class AuthController extends Controller
     }
 
     /**
+     * Change Password User Aktif
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8|confirmed',
+        ], [
+            'current_password.required' => 'Password saat ini wajib diisi.',
+            'new_password.required' => 'Password baru wajib diisi.',
+            'new_password.min' => 'Password baru minimal harus 8 karakter.',
+            'new_password.confirmed' => 'Konfirmasi password baru tidak cocok.',
+        ]);
+
+        $user = $request->user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return $this->errorResponse('Password saat ini yang Anda masukkan tidak sesuai.', 422);
+        }
+
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        return $this->successResponse(null, 'Password Anda berhasil diperbarui.');
+    }
+
+    /**
      * @OA\Post(
      *     path="/auth/logout",
      *     summary="Logout Pengguna",

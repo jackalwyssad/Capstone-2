@@ -39,6 +39,8 @@ Route::prefix('v1')->group(function () {
         Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
         Route::post('/auth/profile', [AuthController::class, 'updateProfile']);
         Route::post('/auth/upload-avatar', [AuthController::class, 'uploadAvatar']);
+        Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
+        Route::put('/auth/change-password', [AuthController::class, 'changePassword']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
 
         // Dashboard Metrics per Role
