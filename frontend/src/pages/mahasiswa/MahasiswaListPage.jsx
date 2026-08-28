@@ -33,6 +33,9 @@ import {
   Phone,
   Mail,
   MessageCircle,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 
 const MySwal = withReactContent(Swal);
@@ -54,6 +57,8 @@ export const MahasiswaListPage = () => {
   // Modal States
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isResultModalOpen, setIsResultModalOpen] = useState(false);
+  const [importResult, setImportResult] = useState(null);
   const [selectedMhs, setSelectedMhs] = useState(null);
   
   // Import File Excel & JSON States
@@ -123,6 +128,46 @@ export const MahasiswaListPage = () => {
         }
       });
   }, [watchedProdi, watchedAngkatan, isFormModalOpen, selectedMhs, isCustomNim, setValue]);
+
+  // Otomatis deteksi Prodi & Angkatan saat pengguna mengetik NIM secara manual (Prefix 12 = IF, Prefix 32 = SI)
+  useEffect(() => {
+    if (!isCustomNim || !watchedNim || watchedNim.length < 2) return;
+
+    const clean = watchedNim.trim();
+    if (
+      clean.startsWith('32') ||
+      clean.startsWith('31') ||
+      clean.startsWith('21') ||
+      clean.startsWith('22') ||
+      clean.toUpperCase().startsWith('SI') ||
+      clean.toUpperCase().startsWith('IS')
+    ) {
+      if (watchedProdi !== 'Sistem Informasi') {
+        setValue('prodi', 'Sistem Informasi');
+      }
+    } else if (
+      clean.startsWith('12') ||
+      clean.startsWith('11') ||
+      clean.startsWith('10') ||
+      clean.toUpperCase().startsWith('IF') ||
+      clean.toUpperCase().startsWith('TI')
+    ) {
+      if (watchedProdi !== 'Teknik Informatika') {
+        setValue('prodi', 'Teknik Informatika');
+      }
+    }
+
+    // Deteksi angkatan otomatis dari 2 digit tahun jika digit ke 3 & 4 adalah angka (contoh: 3224001 -> 2024)
+    if (clean.length >= 4) {
+      const yearDigits = clean.slice(2, 4);
+      if (/^\d{2}$/.test(yearDigits)) {
+        const inferredYear = `20${yearDigits}`;
+        if (watchedAngkatan !== inferredYear && parseInt(inferredYear, 10) >= 2000 && parseInt(inferredYear, 10) <= 2099) {
+          setValue('angkatan', inferredYear);
+        }
+      }
+    }
+  }, [watchedNim, isCustomNim, watchedProdi, watchedAngkatan, setValue]);
 
   const openCreateModal = () => {
     setSelectedMhs(null);
@@ -315,11 +360,54 @@ export const MahasiswaListPage = () => {
       setIsImportModalOpen(false);
       handleResetExcel();
       setImportJsonText('');
+
+      // Buka Modal Detail Hasil Impor (termasuk ringkasan data gagal/dilewati)
+      if (res.data) {
+        setImportResult(res.data);
+        setIsResultModalOpen(true);
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Gagal memproses impor data.');
     } finally {
       setIsImporting(false);
     }
+  };
+
+  // Download File Excel khusus baris data yang gagal/dilewati
+  const handleDownloadSkippedExcel = () => {
+    if (!importResult?.skipped_details || importResult.skipped_details.length === 0) {
+      toast.info('Tidak ada data gagal yang dapat diunduh.');
+      return;
+    }
+
+    const headers = [
+      'No',
+      'NIM',
+      'Nama Lengkap',
+      'Jenis Kelamin',
+      'Program Studi',
+      'Angkatan',
+      'IPK Terakhir',
+      'SKS Lulus',
+      'Nama Terdaftar di Sistem',
+      'Alasan Dilewati / Gagal',
+    ];
+
+    const rows = importResult.skipped_details.map((item, idx) => [
+      idx + 1,
+      item.nim || '-',
+      item.nama_lengkap || item.nama_input || '-',
+      item.jenis_kelamin || '-',
+      item.prodi || '-',
+      item.angkatan || '-',
+      item.ipk_terakhir ?? '-',
+      item.sks_lulus ?? '-',
+      item.nama_terdaftar || '-',
+      item.alasan || 'NIM sudah terdaftar atas nama mahasiswa lain',
+    ]);
+
+    exportToExcel(headers, rows, `Data_Mahasiswa_Gagal_Import_${new Date().toISOString().slice(0, 10)}`);
+    toast.success('File Excel data gagal/dilewati berhasil diunduh.');
   };
 
   const copyTemplateJson = () => {
@@ -963,6 +1051,120 @@ export const MahasiswaListPage = () => {
               disabled={activeImportTab === 'excel' && excelParsedData.length === 0}
             >
               Proses Impor Data
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Ringkasan Hasil Impor & Unduh Data Gagal / Dilewati */}
+      <Modal
+        isOpen={isResultModalOpen}
+        onClose={() => setIsResultModalOpen(false)}
+        title="Ringkasan Hasil Impor Mahasiswa"
+        maxWidth="max-w-3xl"
+      >
+        <div className="space-y-5">
+          {/* Summary Badges */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">Mahasiswa Baru</p>
+                <p className="text-lg font-black text-emerald-700 dark:text-emerald-200">{importResult?.created_count || 0}</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold text-blue-800 dark:text-blue-300">Data Diperbarui</p>
+                <p className="text-lg font-black text-blue-700 dark:text-blue-200">{importResult?.updated_count || 0}</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold text-rose-800 dark:text-rose-300">Dilewati / Gagal</p>
+                <p className="text-lg font-black text-rose-700 dark:text-rose-200">{importResult?.skipped_count || 0}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Daftar Baris Data yang Dilewati */}
+          {importResult?.skipped_count > 0 ? (
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-800 dark:text-amber-300">
+                    <strong>{importResult.skipped_count} data dilewati</strong> demi keamanan data karena NIM sudah terdaftar atas nama orang lain. Anda dapat mengunduh data gagal ini untuk diperbaiki.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  icon={Download}
+                  onClick={handleDownloadSkippedExcel}
+                  className="bg-white dark:bg-slate-900 border-amber-300 text-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-xs py-1.5 whitespace-nowrap"
+                >
+                  Download Data Gagal (.xlsx)
+                </Button>
+              </div>
+
+              <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden max-h-60 overflow-y-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-slate-100 dark:bg-slate-800/80 sticky top-0 text-slate-700 dark:text-slate-300">
+                    <tr>
+                      <th className="p-2.5">No</th>
+                      <th className="p-2.5">NIM</th>
+                      <th className="p-2.5">Nama Input</th>
+                      <th className="p-2.5">Nama di Sistem</th>
+                      <th className="p-2.5">Keterangan / Alasan</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                    {importResult.skipped_details?.map((item, index) => (
+                      <tr key={index} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                        <td className="p-2.5 text-slate-400 font-mono">{index + 1}</td>
+                        <td className="p-2.5 font-mono font-bold text-rose-600 dark:text-rose-400">{item.nim}</td>
+                        <td className="p-2.5 font-semibold text-slate-900 dark:text-slate-100">{item.nama_lengkap || item.nama_input}</td>
+                        <td className="p-2.5 text-slate-600 dark:text-slate-400">{item.nama_terdaftar || '-'}</td>
+                        <td className="p-2.5 text-[11px] text-rose-600 dark:text-rose-300">{item.alasan}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 text-center">
+              <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-1.5" />
+              <p className="text-xs font-bold text-emerald-800 dark:text-emerald-200">Semua Data Berhasil Diproses!</p>
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5">Tidak ada baris data yang gagal atau dilewati.</p>
+            </div>
+          )}
+
+          {/* Modal Footer */}
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+            {importResult?.skipped_count > 0 && (
+              <Button
+                variant="outline"
+                icon={Download}
+                onClick={handleDownloadSkippedExcel}
+                className="text-xs"
+              >
+                Unduh Data Gagal (.xlsx)
+              </Button>
+            )}
+            <Button onClick={() => setIsResultModalOpen(false)}>
+              Selesai & Tutup
             </Button>
           </div>
         </div>

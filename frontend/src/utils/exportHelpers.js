@@ -46,29 +46,42 @@ export const readExcelFile = (file) => {
             const cleanKey = key.trim().toLowerCase();
             const val = typeof row[key] === 'string' ? row[key].trim() : row[key];
 
-            if (cleanKey.includes('nim')) {
+            if (cleanKey.includes('nim') || cleanKey.includes('nomor induk') || cleanKey.includes('no induk') || cleanKey.includes('student id')) {
               item.nim = String(val);
-            } else if (cleanKey.includes('nama')) {
+            } else if (cleanKey.includes('nama') || cleanKey.includes('name') || cleanKey.includes('mahasiswa')) {
               item.nama_lengkap = String(val);
-            } else if (cleanKey.includes('kelamin') || cleanKey === 'jk' || cleanKey === 'gender') {
-              const lowerVal = String(val).toLowerCase();
-              if (lowerVal.startsWith('p') || lowerVal.includes('wanita') || lowerVal.includes('perempuan')) {
+            } else if (cleanKey.includes('kelamin') || cleanKey.includes('gender') || cleanKey === 'jk' || cleanKey.includes('sex')) {
+              const lowerVal = String(val).toLowerCase().trim();
+              if (lowerVal.startsWith('p') || lowerVal.includes('wanita') || lowerVal.includes('perempuan') || lowerVal === 'f' || lowerVal === 'female') {
                 item.jenis_kelamin = 'Perempuan';
               } else {
                 item.jenis_kelamin = 'Laki-laki';
               }
-            } else if (cleanKey.includes('prodi') || cleanKey.includes('jurusan')) {
-              const lowerProdi = String(val).toLowerCase();
-              if (lowerProdi.includes('sistem') || lowerProdi.includes('si')) {
+            } else if (
+              cleanKey.includes('prodi') ||
+              cleanKey.includes('studi') ||
+              cleanKey.includes('program') ||
+              cleanKey.includes('jurusan') ||
+              cleanKey.includes('major') ||
+              cleanKey.includes('study')
+            ) {
+              const lowerProdi = String(val).toLowerCase().trim();
+              if (
+                lowerProdi.includes('sistem') ||
+                lowerProdi.includes('informasi') ||
+                lowerProdi === 'si' ||
+                lowerProdi === 'is' ||
+                lowerProdi.startsWith('sistem')
+              ) {
                 item.prodi = 'Sistem Informasi';
               } else {
                 item.prodi = 'Teknik Informatika';
               }
-            } else if (cleanKey.includes('angkatan') || cleanKey.includes('tahun')) {
+            } else if (cleanKey.includes('angkatan') || cleanKey.includes('tahun') || cleanKey.includes('year') || cleanKey.includes('cohort')) {
               item.angkatan = String(val);
-            } else if (cleanKey.includes('ipk')) {
+            } else if (cleanKey.includes('ipk') || cleanKey.includes('gpa') || cleanKey.includes('indeks')) {
               item.ipk_terakhir = parseFloat(val) || 0.00;
-            } else if (cleanKey.includes('sks')) {
+            } else if (cleanKey.includes('sks') || cleanKey.includes('kredit') || cleanKey.includes('credit')) {
               item.sks_lulus = parseInt(val, 10) || 0;
             }
           }
@@ -78,6 +91,37 @@ export const readExcelFile = (file) => {
           if (!item.prodi) item.prodi = 'Teknik Informatika';
           if (!item.angkatan) item.angkatan = String(new Date().getFullYear());
           if (!item.jenis_kelamin) item.jenis_kelamin = 'Laki-laki';
+
+          // Otomatis deteksi Prodi & Angkatan dari Awalan NIM (Prefix Standar STMIK Bandung) jika NIM diisi
+          if (item.nim) {
+            const cleanNim = String(item.nim).trim();
+            if (
+              cleanNim.startsWith('32') ||
+              cleanNim.startsWith('31') ||
+              cleanNim.startsWith('21') ||
+              cleanNim.startsWith('22') ||
+              cleanNim.toUpperCase().startsWith('SI') ||
+              cleanNim.toUpperCase().startsWith('IS')
+            ) {
+              item.prodi = 'Sistem Informasi';
+            } else if (
+              cleanNim.startsWith('12') ||
+              cleanNim.startsWith('11') ||
+              cleanNim.startsWith('10') ||
+              cleanNim.toUpperCase().startsWith('IF') ||
+              cleanNim.toUpperCase().startsWith('TI')
+            ) {
+              item.prodi = 'Teknik Informatika';
+            }
+
+            // Jika angkatan tidak spesifik, ekstrak tahun dari 2 digit NIM (misal 3226001 -> 2026, 1224001 -> 2024)
+            if (cleanNim.length >= 4) {
+              const yearDigits = cleanNim.slice(2, 4);
+              if (/^\d{2}$/.test(yearDigits)) {
+                item.angkatan = `20${yearDigits}`;
+              }
+            }
+          }
 
           return item;
         }).filter((row) => Boolean(row.nama_lengkap));

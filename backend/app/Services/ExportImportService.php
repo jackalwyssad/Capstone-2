@@ -86,13 +86,56 @@ class ExportImportService
                 continue;
             }
 
-            $namaLengkap  = trim((string)$item['nama_lengkap']);
-            $prodi        = !empty($item['prodi']) ? trim((string)$item['prodi']) : 'Teknik Informatika';
+            $namaLengkap = trim((string)$item['nama_lengkap']);
+
+            $rawProdi = !empty($item['prodi']) ? strtolower(trim((string)$item['prodi'])) : '';
+            if (str_contains($rawProdi, 'sistem') || str_contains($rawProdi, 'informasi') || $rawProdi === 'si' || $rawProdi === 'is') {
+                $prodi = 'Sistem Informasi';
+            } else {
+                $prodi = 'Teknik Informatika';
+            }
+
+            $rawJk = !empty($item['jenis_kelamin']) ? strtolower(trim((string)$item['jenis_kelamin'])) : '';
+            if (str_starts_with($rawJk, 'p') || str_contains($rawJk, 'wanita') || str_contains($rawJk, 'perempuan') || $rawJk === 'f' || $rawJk === 'female') {
+                $jenisKelamin = 'Perempuan';
+            } else {
+                $jenisKelamin = 'Laki-laki';
+            }
+
             $angkatan     = !empty($item['angkatan']) ? trim((string)$item['angkatan']) : date('Y');
-            $jenisKelamin = !empty($item['jenis_kelamin']) ? trim((string)$item['jenis_kelamin']) : 'Laki-laki';
             $ipk          = isset($item['ipk_terakhir']) ? (float)$item['ipk_terakhir'] : 0.00;
             $sks          = isset($item['sks_lulus']) ? (int)$item['sks_lulus'] : 0;
             $nim          = !empty($item['nim']) ? trim((string)$item['nim']) : null;
+
+            // Jika NIM diisi, otomatis deteksi / sesuaikan Prodi & Angkatan dari Awalan NIM (Prefix STMIK Bandung)
+            if (!empty($nim)) {
+                $cleanNim = trim((string)$nim);
+                if (
+                    str_starts_with($cleanNim, '32') ||
+                    str_starts_with($cleanNim, '31') ||
+                    str_starts_with($cleanNim, '21') ||
+                    str_starts_with($cleanNim, '22') ||
+                    str_starts_with(strtoupper($cleanNim), 'SI') ||
+                    str_starts_with(strtoupper($cleanNim), 'IS')
+                ) {
+                    $prodi = 'Sistem Informasi';
+                } elseif (
+                    str_starts_with($cleanNim, '12') ||
+                    str_starts_with($cleanNim, '11') ||
+                    str_starts_with($cleanNim, '10') ||
+                    str_starts_with(strtoupper($cleanNim), 'IF') ||
+                    str_starts_with(strtoupper($cleanNim), 'TI')
+                ) {
+                    $prodi = 'Teknik Informatika';
+                }
+
+                if (strlen($cleanNim) >= 4) {
+                    $yearDigits = substr($cleanNim, 2, 2);
+                    if (ctype_digit($yearDigits)) {
+                        $angkatan = "20{$yearDigits}";
+                    }
+                }
+            }
 
             // Jika NIM tidak diisi, otomatis buatkan NIM baru sesuai urutan standar STMIK
             if (empty($nim)) {
@@ -111,7 +154,12 @@ class ExportImportService
                     $skipped++;
                     $skippedDetails[] = [
                         'nim'            => $nim,
-                        'nama_input'     => $namaLengkap,
+                        'nama_lengkap'   => $namaLengkap,
+                        'jenis_kelamin'  => $jenisKelamin,
+                        'prodi'          => $prodi,
+                        'angkatan'       => $angkatan,
+                        'ipk_terakhir'   => $ipk,
+                        'sks_lulus'      => $sks,
                         'nama_terdaftar' => $existingMhs->nama_lengkap,
                         'alasan'         => "NIM {$nim} sudah terdaftar atas nama {$existingMhs->nama_lengkap}. Data dilewati untuk mencegah penimpaan data salah.",
                     ];
