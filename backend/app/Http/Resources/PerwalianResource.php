@@ -24,6 +24,7 @@ class PerwalianResource extends JsonResource
             'catatan_mahasiswa' => $this->catatan_mahasiswa,
             'catatan_dosen' => $this->catatan_dosen,
             'status' => $this->status,
+            'tgl_pengajuan' => $this->created_at?->format('Y-m-d H:i:s'),
             'tgl_persetujuan' => $this->tgl_persetujuan?->format('Y-m-d H:i:s'),
             'mahasiswa' => new MahasiswaResource($this->whenLoaded('mahasiswa')),
             'dosen' => new DosenResource($this->whenLoaded('dosen')),

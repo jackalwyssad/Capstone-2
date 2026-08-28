@@ -9,11 +9,25 @@ import autoTable from 'jspdf-autotable';
 
 /**
  * Ekspor array data JavaScript ke file Excel (.xlsx)
- * @param {Array} data Array of objects atau array of arrays
- * @param {String} fileName Nama file output (tanpa ekstensi)
+ * @param {Array} headersOrData Array of arrays data atau array string header
+ * @param {Array|String} rowsOrFileName Array baris data ATAU nama file
+ * @param {String} maybeFileName Nama file jika dipanggil dengan 3 argumen (headers, rows, fileName)
  */
-export const exportToExcel = (data, fileName = 'Rekap_Perwalian_STMIK_Bandung') => {
-  const worksheet = XLSX.utils.aoa_to_sheet(data);
+export const exportToExcel = (headersOrData, rowsOrFileName = 'Rekap_Perwalian_STMIK_Bandung', maybeFileName) => {
+  let aoa = [];
+  let fileName = 'Rekap_Perwalian_STMIK_Bandung';
+
+  if (Array.isArray(rowsOrFileName)) {
+    // Dipanggil dengan 3 argumen: (headers, rows, fileName)
+    aoa = [headersOrData, ...rowsOrFileName];
+    fileName = typeof maybeFileName === 'string' ? maybeFileName : 'Rekap_Perwalian_STMIK_Bandung';
+  } else {
+    // Dipanggil dengan 2 argumen: (aoa_data, fileName)
+    aoa = Array.isArray(headersOrData) ? headersOrData : [];
+    fileName = typeof rowsOrFileName === 'string' ? rowsOrFileName : 'Rekap_Perwalian_STMIK_Bandung';
+  }
+
+  const worksheet = XLSX.utils.aoa_to_sheet(aoa);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Perwalian');
   XLSX.writeFile(workbook, `${fileName}_${new Date().toISOString().slice(0, 10)}.xlsx`);

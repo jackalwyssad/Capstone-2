@@ -390,13 +390,49 @@ export const PerwalianListPage = () => {
 
   const handleExportExcel = async () => {
     try {
-      const res = await perwalianService.exportExcel({ status: statusFilter, semester: semesterFilter });
-      if (!res.data || res.data.length <= 1) {
+      toast.info('Menyiapkan file Excel...');
+      const allDataRes = await perwalianService.getPerwalian({ per_page: 1000, status: statusFilter, semester: semesterFilter });
+      const allPerwalian = allDataRes?.data || [];
+      if (allPerwalian.length === 0) {
         toast.info('Belum ada data perwalian yang dapat diekspor ke Excel.');
         return;
       }
-      exportToExcel(res.data, 'Rekap_Perwalian_STMIK_Bandung');
-      toast.success('File Excel rekap perwalian berhasil didownload.');
+      const formatDateStr = (dateStr) => {
+        if (!dateStr) return '-';
+        try {
+          const formattedInput = typeof dateStr === 'string' && dateStr.includes(' ') && !dateStr.includes('T')
+            ? dateStr.replace(' ', 'T')
+            : dateStr;
+          const d = new Date(formattedInput);
+          if (isNaN(d.getTime())) return String(dateStr);
+          return d.toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+        } catch {
+          return String(dateStr);
+        }
+      };
+
+      const headers = ['No', 'NIM', 'Nama Mahasiswa', 'Dosen Pembimbing', 'Semester', 'IPK', 'SKS', 'Status', 'Tanggal Pengajuan', 'Tanggal Persetujuan', 'Catatan'];
+      const rows = allPerwalian.map((p, idx) => [
+        idx + 1,
+        p.mahasiswa?.nim || '-',
+        p.mahasiswa?.nama_lengkap || '-',
+        p.dosen?.nama_lengkap || '-',
+        p.semester,
+        p.ipk_semester,
+        `${p.sks_diambil} SKS`,
+        p.status,
+        formatDateStr(p.tgl_pengajuan || p.created_at),
+        formatDateStr(p.tgl_persetujuan),
+        p.catatan_dosen || p.catatan_mahasiswa || '-',
+      ]);
+      exportToExcel(headers, rows, 'Rekap_Perwalian_STMIK_Bandung');
+      toast.success(`Berhasil mengunduh ${allPerwalian.length} data Perwalian ke Excel.`);
     } catch (err) {
       toast.error('Gagal mengunduh file Excel.');
     }
@@ -411,7 +447,27 @@ export const PerwalianListPage = () => {
         return;
       }
       toast.info('Menyiapkan file PDF...');
-      const headers = ['No', 'NIM', 'Nama Mahasiswa', 'Dosen Pembimbing', 'Semester', 'IPK', 'SKS', 'Status'];
+      const formatDateStr = (dateStr) => {
+        if (!dateStr) return '-';
+        try {
+          const formattedInput = typeof dateStr === 'string' && dateStr.includes(' ') && !dateStr.includes('T')
+            ? dateStr.replace(' ', 'T')
+            : dateStr;
+          const d = new Date(formattedInput);
+          if (isNaN(d.getTime())) return String(dateStr);
+          return d.toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+        } catch {
+          return String(dateStr);
+        }
+      };
+
+      const headers = ['No', 'NIM', 'Nama Mahasiswa', 'Dosen Pembimbing', 'Semester', 'IPK', 'SKS', 'Status', 'Tgl Pengajuan', 'Tgl Persetujuan'];
       const rows = allPerwalian.map((p, idx) => [
         idx + 1,
         p.mahasiswa?.nim || '-',
@@ -421,6 +477,8 @@ export const PerwalianListPage = () => {
         p.ipk_semester,
         `${p.sks_diambil} SKS`,
         p.status,
+        formatDateStr(p.tgl_pengajuan || p.created_at),
+        formatDateStr(p.tgl_persetujuan),
       ]);
       exportToPDF(headers, rows, 'Laporan Rekapitulasi Perwalian Mahasiswa STMIK Bandung', 'Rekap_Perwalian_STMIK_Bandung');
       toast.success(`Berhasil mengunduh ${allPerwalian.length} data Perwalian ke PDF.`);
